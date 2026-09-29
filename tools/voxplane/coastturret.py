@@ -3,13 +3,12 @@
 The game draws a building's voxel turret itself (TurretAnimIsVoxel=true, as
 the sea cannon NASCAN and the grand cannon GTGCAN), so it is lit and shaded
 exactly like every tank and ship. Files, named after the building:
-  gaguntur.vxl/.hva   armoured pedestal and twin-gun turret (x = forward)
+  gaguntur.vxl/.hva   armoured twin-gun turret (x = forward)
   gagunbarl.vxl/.hva  the twin barrels with blast bags
-The base is the original coastal gun disc (its top about 9 px above the
-ground). Voxels follow the game's conventions (T-34 gerf/gerftur: placed
-above the base through the bounds; one world unit is about 0.66 px of
-height on screen). A short pedestal drum lifts the turret about 4 px, so the
-battery is a little taller than the old gun and well below the laser tower.
+The base is the bastion of tools/shp/coastbattery.py, whose steel turret
+ring tops out 25.3 world units up (one unit is about 0.66 px of height on
+screen, the game's voxel convention as in T-34 gerf/gerftur: placed above
+the base through the bounds), so the turret stands on that ring.
 """
 import os
 import sys
@@ -19,9 +18,9 @@ import numpy as np
 from builder import PALETTE, quantize_normals, surface_normals, to_index
 from vxlio import Section, write_hva, write_vxl
 
-U = 0.55                   # world units per voxel (the T-34 uses 0.8333; smaller to fit the disc)
-BASE_TOP = 13.5            # top of the original disc (about 9 px above the ground)
-FLOOR = 19.5               # turret floor on the pedestal (about 4 px higher)
+U = 0.6                    # world units per voxel (the T-34 uses 0.8333; smaller to fit the dome)
+BASE_TOP = 25.3            # top of the bastion turret ring (tools/shp/coastbattery.py)
+FLOOR = 25.3               # turret floor: straight on the ring, no pedestal
 PED = int(round((FLOOR - BASE_TOP) / U))      # pedestal height in voxels
 
 STEEL = (136, 140, 148)
@@ -71,7 +70,7 @@ def turret():
             remap[m] = r
 
     # pedestal drum with a house-colour band, then the traverse ring
-    ped = (np.hypot(X - 36, Y) <= 22) & (Z < 0)
+    ped = (np.hypot(X - 36, Y) <= 22) & (Z < 0)          # empty when PED == 0
     put(ped, STEEL)
     paint(ped & (Z < -PED + 1.5), STEEL_D)
     paint(ped & (np.hypot(X - 36, Y) > 20.5) & (np.abs(Z + PED / 2.0) < PED / 4.0), HOUSE, True)

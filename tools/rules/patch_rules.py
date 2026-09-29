@@ -701,13 +701,11 @@ def main(src, dst):
     print('\n'.join(log))
 
 
-# coastal battery: original disc, voxel twin-gun turret on a short pedestal
-# (tools/voxplane/coastturret.py). The muzzles are 56 units in front of the
-# pivot, 25 units up and 4.4 units either side (about 4.6 leptons per unit);
-# PrimaryFireDualOffset alternates the side, one shell per barrel. Height 3
-# (the old gun 2, the laser tower 4): a little taller than before.
-ART_SET = {('GAGUN', 'PrimaryFireFLH'): '258,20,115', ('GAGUN', 'PrimaryFireDualOffset'): 'yes',
-           ('GAGUN', 'Height'): '3'}
+# coastal battery: RA2-style bastion (tools/shp/coastbattery.py) with the voxel
+# twin-gun turret on its ring (tools/voxplane/coastturret.py). The muzzles are
+# 61 units in front of the pivot, 31 units up and 4.8 units either side (about
+# 4.6 leptons per unit); PrimaryFireDualOffset alternates the side.
+ART_SET = {('GAGUN', 'PrimaryFireFLH'): '282,22,144', ('GAGUN', 'PrimaryFireDualOffset'): 'yes'}
 
 
 def patch_art(src, dst):
