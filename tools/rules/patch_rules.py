@@ -253,13 +253,13 @@ WEAPONS = {
     'WW2_Ho5':         (22, 8, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
     'WW2_Ho103':       (20, 8, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
     'WW2_P38Nose':     (20, 10, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,   # concentrated nose battery
-    'WW2_MK108':       (55, 6, 6, 130, 7, 'WW2_FighterGunP', 'WW2_Cannon30WH') + GUN,    # 4 x MK 108 30 mm
+    # Me 262: 4 x MK 108 30 mm. Heavy, slow (540 m/s) mine shells: a few hits
+    # bring down a bomber, but short range, few rounds, and the slow shells
+    # turn less (ROT 48) so agile fighters are harder to hit.
+    'WW2_MK108':       (75, 4, 9, 90, 6, 'WW2_MK108P', 'WW2_Cannon30WH') + GUN,
     'WW2_ShVAK_Yak9':  (20, 7, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # Yak-9: ShVAK + UBS
     # Ju 87G: Stuka-style dive attack as the old GERL (AirDesem), ground only
     'WW2_BK37':        (45, 8, 4, 95, 10, 'WW2_StukaP', 'WW2_Cannon37APWH') + GUN,     # 2 x BK 3,7
-    # carrier aircraft defensive / interception guns (Secondary, as HORNET's
-    # original AA Secondary)
-    'WW2_CarrierAirGun': (20, 4, 12, 100, 8, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
 }
 
 PROJECTILES = '''
@@ -286,6 +286,25 @@ Arm=0
 High=no
 VeryHigh=no
 
+; Me 262 MK 108: big, slow 30 mm shell (the game's cannon shell image)
+[WW2_MK108P]
+Image=120MM
+Inviso=no
+Shadow=no
+Arcing=no
+ROT=48
+Proximity=yes
+Ranged=yes
+AA=yes
+AG=yes
+SubjectToCliffs=no
+SubjectToElevation=no
+SubjectToWalls=no
+Acceleration=4
+Arm=0
+High=no
+VeryHigh=no
+
 ; Ju 87G: the old GERL's Stuka-style projectile (AirDesem), ground only
 [WW2_StukaP]
 Image=DART
@@ -300,25 +319,6 @@ SubjectToCliffs=no
 SubjectToElevation=no
 SubjectToWalls=no
 Cluster=2
-
-; carrier aircraft AA guns: homing tracer
-[WW2_AirGunP]
-Image=DART
-Inviso=no
-Shadow=no
-Arcing=no
-ROT=60
-Proximity=yes
-Ranged=yes
-AA=yes
-AG=no
-Acceleration=8
-SubjectToCliffs=no
-SubjectToElevation=no
-SubjectToWalls=no
-Arm=0
-High=no
-VeryHigh=no
 '''
 
 # Verses order: none, flak, plate, light, medium, heavy, wood, steel, concrete, special_1, special_2
@@ -371,17 +371,6 @@ ProneDamage=50%
 Conventional=yes
 Wall=yes
 Wood=yes
-
-; carrier aircraft AA guns
-[WW2_AirMGWH]
-CellSpread=.15
-PercentAtMax=.5
-Verses=100%,90%,80%,75%,60%,35%,50%,30%,10%,40%,100%
-InfDeath=1
-AnimList=PIFFPIFF,PIFF
-Bullets=yes
-Wall=no
-Wood=yes
 '''
 
 
@@ -417,11 +406,123 @@ def weapon_block(name, spec, elite=False):
 
 
 # ------------------------------------------------ 3. aircraft carriers
-# Auto-launch within (launcher range - 10) and intercept enemy aircraft.
+# Auto-launch within (launcher range - 10). Ground attack only: launchers and
+# carrier aircraft keep their original weapons (no anti-air).
 CARRIERS = {'CARRIER': ('HornetLauncher', 'HORNET'),
             'NIMITZ': ('J35Launcher', 'J35'),
             'NODCARRI': ('SU34Launcher', 'SU34')}
 CARRIER_SIGHT = 12
+
+# ------------------------------------------------ 3b. bombers: a different bombing style each
+# He 111 (ALPHA), Ju 88 (JAFSD), B-17 (B2BOMBER) and A-26 (A10W) keep their
+# attacks. Pe-2 (GERR) keeps its guided dive bombs with a bomb model instead
+# of a missile. B-25J, B-24 and Lancaster get new weapons (original weapon
+# names kept, values replaced). A projectile with ROT < 2 makes a run along
+# the target dropping 5 times (Burst on the first drop); ROT >= 2 releases
+# everything in one pass.
+BOMB_ART = ['WWFAB250', 'WWNAPALM', 'WWTALBOY']       # voxel bombs (tools/voxplane/bombs.py)
+BOMBER_IMAGE = {'BSCannon2': 'WWFAB250'}               # Pe-2: FAB-250 instead of the FESSILE missile
+# weapon: (Damage, elite Damage, Burst, ROF, Speed, Range, Projectile, Warhead, Report)
+BOMBER_WEAPONS = {
+    # B-25J (KPLN): napalm run -- low pass, 6 tanks, each splashing fire
+    # around it (Cluster); burns infantry and light vehicles, weak on armour
+    'TDNapalm':      (40, 52, 2, 12, 0, 4, 'WW2_NapalmP', 'WW2_NapalmWH', 'BlackEagleAttack'),
+    # B-24 (F1172): carpet of fragmentation cluster bombs
+    'Maverick5':     (34, 44, 3, 10, 20, 5, 'WW2_ClusterBombP', 'WW2_FragWH', 'KirovAttack'),
+    # Lancaster (GERM): one Tallboy earthquake bomb per sortie
+    'NafaRocketFan': (520, 680, 1, 60, 25, 4, 'WW2_TallboyP', 'WW2_TallboyWH', 'KirovAttack'),
+}
+BOMBER_AMMO = {'GERM': 1}
+
+BOMBER_TEXT = '''
+; ---- WWII bombs ------------------------------------------------------------
+; B-25J napalm tank: dropped (weapon Speed 0), falls, bursts into 3 fires
+[WW2_NapalmP]
+Image=WWNAPALM
+Shadow=yes
+Arm=0
+ROT=0
+Proximity=no
+Acceleration=1.3
+AA=no
+AG=yes
+Cluster=3
+SubjectToCliffs=no
+SubjectToElevation=no
+SubjectToWalls=no
+
+; B-24 fragmentation cluster bomb: scattered, each opens into 5 blasts
+[WW2_ClusterBombP]
+Image=DROPB
+Shadow=yes
+Arm=0
+ROT=0
+Arcing=yes
+Inaccurate=yes
+Proximity=no
+Acceleration=1.5
+AA=no
+AG=yes
+Cluster=5
+SubjectToCliffs=no
+SubjectToElevation=no
+SubjectToWalls=no
+
+; Lancaster Tallboy: single aimed release (ROT >= 2, no run)
+[WW2_TallboyP]
+Image=WWTALBOY
+Shadow=yes
+Arm=0
+ROT=4
+Proximity=no
+Acceleration=3
+AA=no
+AG=yes
+SubjectToCliffs=no
+SubjectToElevation=no
+SubjectToWalls=no
+
+; napalm: same explosion as the A-26's shells; wide, even burn
+[WW2_NapalmWH]
+CellSpread=1.6
+PercentAtMax=.7
+Verses=150%,140%,110%,90%,55%,30%,150%,40%,25%,100%,100%
+AnimList=EXPLOLRG,BRRLEXP1
+InfDeath=4
+Fire=yes
+Bright=yes
+ProneDamage=100%
+Wall=no
+Wood=yes
+
+[WW2_FragWH]
+CellSpread=1
+PercentAtMax=.5
+Verses=140%,130%,90%,80%,50%,25%,110%,40%,25%,100%,100%
+AnimList=EXPLOSML,EXPLOMED
+InfDeath=2
+ProneDamage=70%
+Conventional=yes
+Wall=yes
+Wood=yes
+
+; Tallboy: huge blast, cratering, best against buildings
+[WW2_TallboyWH]
+CellSpread=3
+PercentAtMax=.35
+Verses=100%,100%,100%,110%,120%,130%,150%,160%,200%,100%,100%
+AnimList=TWLT100
+InfDeath=2
+Rocker=yes
+Deform=25%
+DeformThreshhold=200
+PenetratesBunker=yes
+ProneDamage=100%
+Conventional=yes
+Wall=yes
+Wood=yes
+'''
+
 
 # ------------------------------------------------ 4. tanks: cannon -> machine gun timing
 # Tanks with a cannon + machine gun use Gattling stages (Ares Gattling.Cycle):
@@ -465,8 +566,6 @@ def main(src, dst):
 
     # new projectiles / warheads, carrier AA gun
     text = PROJECTILES + WARHEADS
-    text += '\n' + weapon_block('WW2_CarrierAirGun', WEAPONS['WW2_CarrierAirGun']) + '\n'
-    text += weapon_block('WW2_CarrierAirGun', WEAPONS['WW2_CarrierAirGun'], elite=True) + '\n'
     for sec in sections_of(text):
         assert not ini.has(sec), 'section [%s] already exists' % sec
     ini.append(text)
@@ -538,12 +637,21 @@ def main(src, dst):
         sight = int(ini.get(carrier, 'Sight') or 0)
         if sight < CARRIER_SIGHT:
             ini.set(carrier, 'Sight', CARRIER_SIGHT)
-        ini.set(launcher, 'Projectile', 'Invisible3')          # Inviso, AA=yes AG=yes: can target aircraft
-        ini.set(spawn, 'Secondary', 'WW2_CarrierAirGun')
-        ini.set(spawn, 'EliteSecondary', 'WW2_CarrierAirGunE')
-        log.append('%s: auto-launch within %g cells (range %g), intercepts aircraft, %s gets AA guns' % (
-            carrier, rng - 10, rng, spawn))
-    assert (ini.get('Invisible3', 'AA') or '').lower() == 'yes'
+        log.append('%s: auto-launch within %g cells (range %g)' % (carrier, rng - 10, rng))
+
+    for sec in sections_of(BOMBER_TEXT):
+        assert not ini.has(sec), 'section [%s] already exists' % sec
+    ini.append(BOMBER_TEXT)
+    for proj, img in BOMBER_IMAGE.items():
+        ini.set(proj, 'Image', img)
+    for w, (dmg, edmg, burst, rof, speed, rng, proj, wh, report) in BOMBER_WEAPONS.items():
+        for name, d in ((w, dmg), (w + 'E', edmg)):
+            ini.replace_section(name, [('Damage', d), ('ROF', rof), ('Range', rng), ('Projectile', proj),
+                                       ('Speed', speed), ('Warhead', wh), ('Report', report),
+                                       ('Burst', burst)])
+        log.append('bomber weapon %s/%sE: %s, %s' % (w, w, proj, wh))
+    for u, ammo in BOMBER_AMMO.items():
+        ini.set(u, 'Ammo', ammo)
 
     fixed = []
     for unit in ini.list_section('VehicleTypes'):
@@ -577,6 +685,9 @@ def patch_art(src, dst):
     art = Ini(open(src, 'rb').read())
     for sec in ART_OWN_IMAGE:
         art.set(sec, 'Image', sec)
+    for sec in BOMB_ART:
+        assert not art.has(sec)
+    art.append('\n\n'.join('[%s]\nVoxel=yes' % sec for sec in BOMB_ART))
     open(dst, 'wb').write(art.data())
     print('artmd: own skin models for %s' % ', '.join(ART_OWN_IMAGE))
 
