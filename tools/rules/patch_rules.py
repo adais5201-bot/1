@@ -215,6 +215,8 @@ RULES_SET = {
     ('190mm', 'Damage'): '180',
     ('190mm', 'Projectile'): 'HeavyShellP_D2',
     ('190mm', 'Speed'): '110',
+    # the turret is a voxel model drawn by the game (tools/voxplane/coastturret.py)
+    ('GAGUN', 'TurretAnimIsVoxel'): 'true',
 }
 MAX_ID = 24          # Ares refuses type IDs longer than 24 characters
 
@@ -699,10 +701,13 @@ def main(src, dst):
     print('\n'.join(log))
 
 
-# coastal battery (tools/shp/coastbattery.py): laser-tower base, twin-gun
-# turret on the dome; the barrels end 64 voxels in front of the pivot and
-# 39 voxels up (64 voxels per cell = 256 leptons; 15 px per 104 leptons)
-ART_SET = {('GAGUN', 'PrimaryFireFLH'): '256,18,156', ('GAGUN', 'PrimaryFireDualOffset'): 'yes'}
+# coastal battery: original disc, voxel twin-gun turret on a short pedestal
+# (tools/voxplane/coastturret.py). The muzzles are 56 units in front of the
+# pivot, 25 units up and 4.4 units either side (about 4.6 leptons per unit);
+# PrimaryFireDualOffset alternates the side, one shell per barrel. Height 3
+# (the old gun 2, the laser tower 4): a little taller than before.
+ART_SET = {('GAGUN', 'PrimaryFireFLH'): '258,20,115', ('GAGUN', 'PrimaryFireDualOffset'): 'yes',
+           ('GAGUN', 'Height'): '3'}
 
 
 def patch_art(src, dst):
