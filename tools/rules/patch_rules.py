@@ -174,6 +174,7 @@ FIGHTERS = {
     'JAGDS':     ('Ki-84-I Hayate',       11, 5, 310, 3, 'WW2_Ho5'),
     'F23':       ('Ki-61-I Hien',         10, 4, 320, 3, 'WW2_Ho103'),
     'STBOMBER':  ('P-38L Lightning',      11, 3, 380, 3, 'WW2_P38Nose'),
+    'NAFAF':     ('Yak-9',                10, 5, 300, 3, 'WW2_ShVAK_Yak9'),
 }
 
 # Skins (base unit + A/B/C): same WWII weapon as the base with the skin's
@@ -195,6 +196,8 @@ SKIN_UNITS = {
     'GERZA':    ('GERZ',    1.15, 1.00, 0, 0, 1.10),   # dmg +15%, hp +10%
     'GERZB':    ('GERZ',    0.80, 1.00, 2, 1, 1.00),   # ammo +2, speed +1, dmg -20%
     'MIG2000A': ('MIG2000', 0.78, 1.00, 1, 0, 1.00),   # ammo +1, dmg -22%
+    'NAFAFA':   ('NAFAF',   0.90, 1.00, 1, 0, 1.00),   # anti-ship role: ammo +1, less vs land
+    'NAFAFB':   ('NAFAF',   0.75, 1.00, 1, 0, 1.08),   # ammo 2->3, dmg -25%, hp +8%
 }
 # skins whose art section pointed at the base model; they get their own model
 ART_OWN_IMAGE = ['FERDA', 'FERDB', 'GERNA', 'GERNB', 'GERNC', 'GERND', 'GERSA', 'GERZA', 'GERZB']
@@ -220,6 +223,13 @@ WEAPONS = {
     'WW2_Ho103':       (20, 8, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
     'WW2_P38Nose':     (20, 10, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # concentrated nose battery
     'WW2_MK108':       (55, 6, 6, 130, 5, 'WW2_StrafeGunP', 'WW2_Cannon30WH') + GUN,    # 4 x MK 108 30 mm
+    'WW2_ShVAK_Yak9':  (20, 7, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # Yak-9: ShVAK + UBS
+    # air to air (Secondary): homing tracer as the original fighter guns
+    # (AircraftCannonP: ROT=104, Proximity) that could engage aircraft
+    'WW2_AirMG':        (18, 6, 8, 120, 8, 'WW2_AirHomingP', 'WW2_AirMGWH') + GUN,
+    'WW2_Air20mm':      (24, 4, 8, 120, 8, 'WW2_AirHomingP', 'WW2_AirCannonWH') + GUN,
+    'WW2_Air20mmHeavy': (24, 6, 8, 120, 8, 'WW2_AirHomingP', 'WW2_AirCannonWH') + GUN,
+    'WW2_AirMK108':     (60, 2, 12, 110, 8, 'WW2_AirHomingP', 'WW2_AirCannonWH') + GUN,
     # Ju 87G: Stuka-style dive attack as the old GERL (AirDesem), ground only
     'WW2_BK37':        (45, 8, 4, 95, 10, 'WW2_StukaP', 'WW2_Cannon37APWH') + GUN,     # 2 x BK 3,7
     # carrier aircraft defensive / interception guns (Secondary, as HORNET's
@@ -227,11 +237,23 @@ WEAPONS = {
     'WW2_CarrierAirGun': (20, 4, 12, 100, 8, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
 }
 
+# ground weapon -> air weapon (the Ju 87G has none: ground attack only)
+AIR_OF = {
+    'WW2_US50_P40': 'WW2_AirMG', 'WW2_US50': 'WW2_AirMG',
+    'WW2_Hispano': 'WW2_Air20mm', 'WW2_Hispano4': 'WW2_Air20mmHeavy', 'WW2_MG151': 'WW2_Air20mm',
+    'WW2_Fw190Guns': 'WW2_Air20mmHeavy', 'WW2_MC205Guns': 'WW2_Air20mm', 'WW2_ShVAK_Yak': 'WW2_Air20mm',
+    'WW2_ShVAK_La': 'WW2_Air20mm', 'WW2_Type99': 'WW2_Air20mm', 'WW2_Ho5': 'WW2_Air20mm',
+    'WW2_Ho103': 'WW2_Air20mm', 'WW2_P38Nose': 'WW2_Air20mmHeavy', 'WW2_MK108': 'WW2_AirMK108',
+    'WW2_ShVAK_Yak9': 'WW2_Air20mm',
+}
+
 PROJECTILES = '''
 ; ---- WWII aircraft guns --------------------------------------------------
-; ROT=1, Inviso=no: strafing runs (same as the old GERL's AirDesem). No
-; Inaccurate, so each round snaps to its target and counts as a hit; no
-; Ranged, so a round is not cut off before it reaches the target.
+; ROT=1, Inviso=no: strafing runs against ground targets (same as the old
+; GERL's AirDesem). No Inaccurate, so each round snaps to its target and
+; counts as a hit; no Ranged, so a round is not cut off before it arrives.
+; A ROT=1 round does not chase a moving aircraft, so air targets use the
+; homing Secondary below (YR picks the Secondary against air targets).
 [WW2_StrafeGunP]
 Image=DART
 Inviso=no
@@ -240,7 +262,7 @@ Arcing=no
 ROT=1
 Proximity=no
 Ranged=no
-AA=yes
+AA=no
 AG=yes
 SubjectToCliffs=no
 SubjectToElevation=no
@@ -263,6 +285,26 @@ SubjectToCliffs=no
 SubjectToElevation=no
 SubjectToWalls=no
 Cluster=2
+
+; fighters' air-to-air Secondary: same as the original AircraftCannonP
+; that fighters used to hit aircraft (homing ROT=104, Proximity)
+[WW2_AirHomingP]
+Image=DART
+Inviso=no
+Shadow=no
+Arcing=no
+ROT=104
+Proximity=yes
+Ranged=yes
+AA=yes
+AG=no
+Acceleration=8
+SubjectToCliffs=no
+SubjectToElevation=no
+SubjectToWalls=no
+Arm=0
+High=no
+VeryHigh=no
 
 ; carrier aircraft AA guns: homing tracer
 [WW2_AirGunP]
@@ -335,7 +377,17 @@ Conventional=yes
 Wall=yes
 Wood=yes
 
-; carrier aircraft AA guns
+; air-to-air cannon
+[WW2_AirCannonWH]
+CellSpread=.25
+PercentAtMax=.5
+Verses=100%,100%,90%,90%,75%,55%,70%,45%,20%,50%,100%
+InfDeath=3
+AnimList=TWLT050,S_CLSN58
+Wall=no
+Wood=yes
+
+; air-to-air machine guns (fighters and carrier aircraft)
 [WW2_AirMGWH]
 CellSpread=.15
 PercentAtMax=.5
@@ -369,25 +421,18 @@ CARRIERS = {'CARRIER': ('HornetLauncher', 'HORNET'),
             'NODCARRI': ('SU34Launcher', 'SU34')}
 CARRIER_SIGHT = 12
 
-# ------------------------------------------------ 4. the Tiger's gun can miss
-# Only the Tiger (CRUSADER and its three skins) is changed; every other tank
-# keeps the original rules.
-# Its shells used the shared HeavyShellP_D3/D7 with ROT=1: ROT above 0 is a
-# homing round, which follows its target, so it could never miss. Ares
-# BallisticScatter only applies to Inaccurate=yes AND Arcing=yes projectiles,
-# so the Tiger gets its own copies of those projectiles as flat ballistic
-# rounds (faster weapon speed keeps the arc low). The warheads are untouched:
-# BoocAPa has 1.8 cells of splash, so the scatter reaches beyond that for a
-# real miss.
-TIGERS = ['CRUSADER', 'CRUSADERA', 'CRUSADERB', 'CRUSADERC']
-TIGER_SCATTER = ('0.6', '2.6')
-TIGER_SHELL_SPEED = 450
-# Gattling (cannon stage -> machine gun stage, Ares Gattling.Cycle): the old
-# Stage1 was ROF+12, so the cannon could fire twice in its stage and the
-# second reload ran past the end of the machine gun stage -- the MG never
-# fired. Now the cannon stage ends just before the cannon reloads (one shot
-# per cycle) and the MG gets MG_WINDOW frames after the reload.
-MG_WINDOW = 60
+# ------------------------------------------------ 4. tanks: cannon -> machine gun timing
+# Tanks with a cannon + machine gun use Gattling stages (Ares Gattling.Cycle):
+# stage 1 = Weapon1 (cannon), stage 2 = Weapon3 (machine gun). In 26 of them
+# Stage1 was the cannon ROF + 12 frames, so the cannon could fire twice in its
+# stage and the second reload ran past the end of the machine gun stage: the
+# machine gun never fired. The units that already worked (JATANK, IDRAG, KAMM,
+# FERB...) use Stage1 = ROF - 24 and Stage2 = ROF + 48: one cannon shot per
+# cycle, then 48 frames of machine gun fire once the cannon has reloaded.
+# That layout is applied to every such tank; ROF values stay as they are.
+GATTLING_BEFORE = 24
+GATTLING_MG_WINDOW = 48
+GATTLING_MIN_CANNON_ROF = 40     # skip rapid-fire autocannon layouts (GFIST)
 
 
 def weapons_of(ini, unit):
@@ -427,8 +472,13 @@ def main(src, dst):
     for unit, (plane, speed, rot, hp, ammo, weapon) in FIGHTERS.items():
         ini.set(unit, 'Primary', weapon)
         ini.set(unit, 'ElitePrimary', weapon + 'E')
-        ini.delete(unit, 'Secondary')
-        ini.delete(unit, 'EliteSecondary')
+        air = AIR_OF.get(weapon)
+        if air:
+            ini.set(unit, 'Secondary', air)
+            ini.set(unit, 'EliteSecondary', air + 'E')
+        else:
+            ini.delete(unit, 'Secondary')
+            ini.delete(unit, 'EliteSecondary')
         ini.set(unit, 'Speed', speed)
         ini.set(unit, 'ROT', rot)
         ini.set(unit, 'Strength', hp)
@@ -448,8 +498,17 @@ def main(src, dst):
         skin_text += weapon_block(wname, spec) + '\n' + weapon_block(wname, spec, elite=True) + '\n'
         ini.set(skin, 'Primary', wname)
         ini.set(skin, 'ElitePrimary', wname + 'E')
-        ini.delete(skin, 'Secondary')
-        ini.delete(skin, 'EliteSecondary')
+        air = AIR_OF.get(weapon)
+        if air:
+            a = WEAPONS[air]
+            aspec = (int(round(a[0] * dm)), a[1], max(1, int(round(a[2] * rm)))) + a[3:]
+            aname = '%s_%s' % (air, skin)
+            skin_text += weapon_block(aname, aspec) + '\n' + weapon_block(aname, aspec, elite=True) + '\n'
+            ini.set(skin, 'Secondary', aname)
+            ini.set(skin, 'EliteSecondary', aname + 'E')
+        else:
+            ini.delete(skin, 'Secondary')
+            ini.delete(skin, 'EliteSecondary')
         ini.set(skin, 'Speed', speed + spd_add)
         ini.set(skin, 'ROT', rot)
         ini.set(skin, 'Strength', int(round(hp * hp_m)))
@@ -478,44 +537,24 @@ def main(src, dst):
             carrier, rng - 10, rng, spawn))
     assert (ini.get('Invisible3', 'AA') or '').lower() == 'yes'
 
-    # Tiger: private ballistic copies of its shell projectiles
-    copies = {}
-    tiger_weapons = []
-    for unit in TIGERS:
-        for k in ('Primary', 'ElitePrimary', 'Weapon1', 'EliteWeapon1'):
-            w = ini.get(unit, k)
-            if w and w not in tiger_weapons:
-                tiger_weapons.append(w)
-    for w in tiger_weapons:
-        proj = ini.get(w, 'Projectile')
-        if proj.upper().startswith('WW2_TIGER'):
+    fixed = []
+    for unit in ini.list_section('VehicleTypes'):
+        if (ini.get(unit, 'IsGattling') or '').lower() != 'yes':
             continue
-        if proj.upper() not in copies:
-            name = 'WW2_Tiger' + proj
-            body = ['[%s]' % name]
-            s0, e0 = ini._range(proj)
-            for line in ini.lines[s0 + 1:e0]:
-                t = line.decode('latin1').strip()
-                if t and not t.startswith(';') and '=' in t:
-                    body.append(t)
-            ini.append('\n'.join(body))
-            for k, v in (('Arcing', 'yes'), ('ROT', '0'), ('Proximity', 'no'), ('Inaccurate', 'yes'),
-                         ('BallisticScatter.Min', TIGER_SCATTER[0]), ('BallisticScatter.Max', TIGER_SCATTER[1])):
-                ini.set(name, k, v)
-            copies[proj.upper()] = name
-        ini.set(w, 'Projectile', copies[proj.upper()])
-        ini.set(w, 'Speed', TIGER_SHELL_SPEED)
-    for unit in TIGERS:
-        rof = int(float(ini.get(ini.get(unit, 'Weapon1'), 'ROF')))
-        erof = int(float(ini.get(ini.get(unit, 'EliteWeapon1'), 'ROF')))
-        ini.set(unit, 'Stage1', rof - 10)
-        ini.set(unit, 'Stage2', rof + MG_WINDOW)
-        ini.set(unit, 'EliteStage1', erof - 10)
-        ini.set(unit, 'EliteStage2', erof + MG_WINDOW)
-        log.append('  %s gattling: cannon ROF %d -> Stage1=%d Stage2=%d (elite ROF %d -> %d / %d)' % (
-            unit, rof, rof - 10, rof + MG_WINDOW, erof, erof - 10, erof + MG_WINDOW))
-    log.append('Tiger guns %s: ballistic, scatter %s-%s cells, Speed %d, own projectiles %s' % (
-        tiger_weapons, TIGER_SCATTER[0], TIGER_SCATTER[1], TIGER_SHELL_SPEED, sorted(copies.values())))
+        if ini.get(unit, 'WeaponStages') != '2' or ini.get(unit, 'WeaponCount') != '4':
+            continue
+        for w_key, s1_key, s2_key in (('Weapon1', 'Stage1', 'Stage2'), ('EliteWeapon1', 'EliteStage1', 'EliteStage2')):
+            w = ini.get(unit, w_key)
+            rof = int(float(ini.get(w, 'ROF') or 0))
+            s1 = int(float(ini.get(unit, s1_key) or 0))
+            if rof < GATTLING_MIN_CANNON_ROF or s1 <= rof - GATTLING_BEFORE:
+                continue
+            ini.set(unit, s1_key, rof - GATTLING_BEFORE)
+            ini.set(unit, s2_key, rof + GATTLING_MG_WINDOW)
+            fixed.append('%s %s: ROF %d -> %s=%d %s=%d' % (unit, w_key, rof, s1_key, rof - GATTLING_BEFORE,
+                                                              s2_key, rof + GATTLING_MG_WINDOW))
+    log.append('cannon/MG timing fixed on %d stage sets:' % len(fixed))
+    log.extend('  ' + f for f in fixed)
 
     open(dst, 'wb').write(ini.data())
     print('\n'.join(log))
