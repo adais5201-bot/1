@@ -10,6 +10,7 @@ NGRAY = (150, 150, 150)      # US neutral grey 43
 NMF = (148, 150, 156)        # natural metal (RA2 lighting brightens it)
 SEABLUE = (48, 58, 92)       # USN non-specular sea blue
 INTBLUE = (84, 100, 134)     # USN intermediate blue
+GSB = (40, 50, 86)           # USN glossy sea blue (overall, 1944-45)
 NWHITE = (225, 225, 225)
 RAF_GREEN = (68, 78, 46)
 RAF_OCEAN = (92, 96, 100)

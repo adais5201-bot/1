@@ -375,35 +375,31 @@ def b25j():
     return p, lv
 
 
-@reg('f2002', 'P-47D Thunderbolt')
-def p47d():
-    L = 11.0
-    p = Plane('f2002', 12.43, L, height=2.4)
-    p.fuselage([(0.0, 0.08, 0.30, 0.62), (1.2, 0.28, 0.50, 0.50), (3.0, 0.50, 0.76, 0.30), (5.0, 0.62, 0.90, 0.12),
-                (6.5, 0.66, 0.94, 0.02), (8.0, 0.68, 0.90, -0.04), (9.4, 0.72, 0.82, -0.08), (9.6, 0.72, 0.82, -0.08)],
+@reg('f2002', 'F4U-1D Corsair')
+def f4u():
+    """Allied general-purpose fighter (US Navy / USMC / Fleet Air Arm)."""
+    L = 10.27
+    p = Plane('f2002', 12.49, L, height=2.4)
+    # long nose, cockpit set far back
+    p.fuselage([(0.0, 0.07, 0.30, 0.60), (1.2, 0.28, 0.48, 0.48), (3.2, 0.48, 0.70, 0.28), (4.6, 0.56, 0.80, 0.18),
+                (5.6, 0.60, 0.82, 0.12), (7.2, 0.64, 0.78, 0.05), (8.6, 0.66, 0.72, 0.0), (8.9, 0.67, 0.70, 0.0)],
                n=2.2)
-    # R-2800 oval cowl with the characteristic chin intake
-    p.fuselage([(9.3, 0.74, 0.82, -0.10), (10.2, 0.76, 0.84, -0.10), (10.5, 0.70, 0.78, -0.10)], n=2.0,
-               main=False)
-    p.ellipsoid((10.5, 0, 0.0), (0.06, 0.58, 0.58), ENGINE)
-    p.ellipsoid((10.5, 0, -0.62), (0.07, 0.42, 0.14), INTAKE)
-    p.spinner(10.45, 0.45, 0.24, mat=METAL)
-    w = W(7.75, 2.95, 1.0, 12.43, z0=-0.45, dihedral=[(0, 0), (6.2, 0.43)], ellip=True, qc=0.3,
-          tc=(0.16, 0.10)).build(p)
-    p.surface(1.8, 1.5, 0.8, 4.9, ellip=True, z0=0.48, qc=0.3, tc=(0.12, 0.09))
-    fin = Fin(1.9, 1.75, 0.6, 1.65, 0.55, sweep=30, tips=0.55).build(p)
-    p.surface(3.4, 1.8, 0.1, 0.35, sweep=78, z0=0.75, tips=0, vertical=True)      # dorsal fillet
-    p.canopy(5.3, 7.1, 0.40, 0.50, 0.80, style='teardrop', frames=(6.9,))
-    p.prop((10.62, 0, -0.02), 4.01, 4, chord=0.12)
-    w.guns(p, (2.55, 2.8, 3.05, 3.3), 0.45, dz=0.02)
-    p.exhausts(3.6, 4.2, 1, 0.64, -0.55, size=0.16)                       # turbo exhaust
+    p.radial_cowl(9.75, 1.2, 0.71, lip=REMAP)
+    p.spinner(9.7, 0.4, 0.24, mat=METAL)
+    # inverted gull wing: steep anhedral to the gear leg, dihedral outboard
+    w = W(7.4, 2.75, 1.2, 12.49, sweep=3, z0=-0.35, dihedral=[(0, 0), (1.9, -0.45), (6.25, 0.28)], tips=0.12,
+          tc=(0.17, 0.09)).build(p)
+    w.le_strip(p, 0.65, 1.75, mat=INTAKE)                                   # wing-root oil cooler / supercharger inlets
+    p.surface(1.5, 1.4, 0.8, 5.2, sweep=6, z0=0.45, tips=0.35)
+    fin = Fin(1.6, 1.6, 0.7, 1.5, 0.55, sweep=25, tips=0.5).build(p)
+    p.canopy(4.3, 6.0, 0.38, 0.50, 0.74, style='teardrop', frames=(4.8, 5.8))
+    w.guns(p, (2.45, 2.7, 2.95), 0.45, dz=0.03)
+    p.exhausts(8.5, 9.0, 2, 0.66, -0.2, size=0.12)
+    p.prop((9.88, 0, 0.0), 4.0, 3)
     w.tips_remap(p, 0.93)
-    fin.top_remap(p, 0.78)
-    lv = Livery(P.scheme_nmf())
-    lv.zone(lambda c: (c.x > 7.0) & (c.x < 10.0) & (c.nz > 0.55) & (np.abs(c.y) < 0.5), P.OD)
-    lv.band(9.8, 10.6, 125, remap=True)                                    # coloured cowl band
-    lv.stripes(1.6, 0.42, 5, x_fus=1.4, fus_width=0.7)
-    lv.top('us', 6.0, -4.2, 0.65, both=False).side('us', 3.0, 0.2, 0.48, ymax=0.9)
+    fin.top_remap(p, 0.8)
+    lv = Livery(P.scheme_two(P.GSB, P.GSB))
+    lv.top('us', 6.4, -4.4, 0.62, both=False).side('us', 3.0, 0.25, 0.46, ymax=0.8)
     return p, lv
 
 
