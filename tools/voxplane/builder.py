@@ -6,9 +6,8 @@ The finished model follows the conventions of the reference model NAFAF:
   * unit voxel spacing (bounds size == voxel count) for every section,
   * body bounds centred on x/y, about 30% of the height below the origin,
   * smooth normals computed from the geometry (RA2 normal mode 4),
-  * propellers as separate sections, pivot on the hub, 2 HVA frames rotated by
-    half the blade pitch angle so the alternating frames read as a spinning
-    disc instead of a wobble.
+  * propellers as separate sections with the pivot on the hub and 2 identical
+    HVA frames, so frame switching in game cannot produce a flickering ghost.
 """
 import os
 
@@ -323,13 +322,13 @@ class Plane:
             sec.name = 'Propeller' if len(self.props) == 1 else 'Propeller%d' % (i + 1)
             cont = (hub - self.g0) * self.s - lo      # continuous index (voxel centre = i + 0.5)
             pos = body.minb + cont                    # body-space coordinate of hub
-            ang = np.radians(180.0 / pd['n'])
+            # Both HVA frames are identical. The game alternates the frames
+            # while the aircraft flies; a large propeller flipping between two
+            # blade positions reads as a ghost image rocking left and right.
             T = pos / sec.scale
             m0 = np.eye(3, 4)
             m0[:, 3] = T
-            m1 = np.eye(3, 4)
-            m1[1, 1], m1[1, 2], m1[2, 1], m1[2, 2] = np.cos(ang), -np.sin(ang), np.sin(ang), np.cos(ang)
-            m1[:, 3] = T
+            m1 = m0.copy()
             sections.append(sec)
             mats0.append(m0)
             mats1.append(m1)

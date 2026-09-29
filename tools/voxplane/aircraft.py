@@ -19,6 +19,10 @@ RLM70P = (46, 56, 40)          # German propeller blades
 IJ_PROP = (110, 80, 50)        # Japanese brown propeller blades
 IJ_TIP = (180, 30, 30)
 
+# Carrier-launched (Spawned=yes) aircraft keep the in-game size of the earlier
+# models they replace: ~5.2 voxels per metre instead of the 8.2 used for fighters.
+CARRIER_S = 5.2
+
 
 def reg(code, desc):
     def deco(f):
@@ -413,7 +417,7 @@ def a26b():
 @reg('hornet', 'SBD-5 Dauntless')
 def sbd():
     L = 10.09
-    p = Plane('hornet', 12.66, L, height=2.4)
+    p = Plane('hornet', 12.66, L, height=2.4, s=CARRIER_S)
     p.fuselage([(0.0, 0.08, 0.30, 0.58), (1.2, 0.25, 0.46, 0.46), (3.5, 0.45, 0.66, 0.26), (5.5, 0.53, 0.74, 0.14),
                 (7.5, 0.60, 0.74, 0.04), (8.7, 0.66, 0.68, 0.0), (9.2, 0.66, 0.66, 0.0)], n=2.2)
     p.radial_cowl(9.62, 1.2, 0.69, lip=REMAP)
@@ -448,7 +452,7 @@ def sbd():
 @reg('j35', 'TBF-1C Avenger')
 def tbf():
     L = 12.48
-    p = Plane('j35', 16.51, L, height=2.8, zlow=2.0)
+    p = Plane('j35', 16.51, L, height=2.8, zlow=2.0, s=CARRIER_S)
     p.fuselage([(0.0, 0.10, 0.34, 0.75), (1.5, 0.34, 0.60, 0.55), (4.0, 0.60, 0.92, 0.28), (6.5, 0.72, 1.08, 0.08),
                 (8.5, 0.75, 1.10, -0.02), (10.3, 0.74, 0.92, 0.0), (11.3, 0.74, 0.80, 0.05)], n=2.4)
     p.radial_cowl(11.95, 1.2, 0.78, z=0.05, lip=REMAP)
@@ -1003,7 +1007,7 @@ def ki61():
 @reg('su34', 'B5N2 Kate')
 def b5n2():
     L = 10.30
-    p = Plane('su34', 15.52, L, height=2.4, zlow=2.0)
+    p = Plane('su34', 15.52, L, height=2.4, zlow=2.0, s=CARRIER_S)
     p.fuselage([(0.0, 0.08, 0.30, 0.55), (1.5, 0.28, 0.46, 0.45), (4.0, 0.50, 0.66, 0.25), (6.5, 0.58, 0.72, 0.10),
                 (8.3, 0.60, 0.70, 0.02), (8.8, 0.62, 0.64, 0.0)], n=2.1)
     p.radial_cowl(9.9, 1.2, 0.65, mat=BLACK)
