@@ -33,8 +33,8 @@ SKIN, GLASS, FRAME, GUN, ENGINE, REMAP, BLACK, METAL, BOMB, INTAKE, YELLOW, WHIT
 # visually, and bombers are only slightly larger. Larger models overlap their
 # neighbours in game and read as ghost images.
 SPAN_FIGHTER = 85      # single-engine aircraft
-SPAN_TWIN = 95         # twin-engine aircraft (span 14-23 m)
-SPAN_HEAVY = 105       # four-engine heavy bombers (span > 23 m)
+SPAN_TWIN = 103        # twin-engine aircraft (span 14-23 m)
+SPAN_HEAVY = 116       # four-engine heavy bombers (span > 23 m)
 
 
 def scale_for_span(span):

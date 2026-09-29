@@ -731,7 +731,7 @@ def bf109():
     return p, lv
 
 
-@reg('gerl', 'Ju 87D-5 Stuka')
+@reg('gerl', 'Ju 87G-2 Stuka')
 def ju87():
     L = 11.5
     p = Plane('gerl', 13.8, L, height=2.6, zlow=2.5)
@@ -752,11 +752,15 @@ def ju87():
     p.fuselage([(xk - 0.75, 0.10, 0.12, zk - 0.6), (xk - 0.3, 0.22, 0.55, zk - 0.55), (xk + 0.35, 0.24, 0.62, zk - 0.6),
                 (xk + 0.8, 0.12, 0.25, zk - 0.35)], n=2.0, y0=2.1, main=False, mirror=True)
     p.cyl((xk, 2.1 - 0.1, zk - 1.25), (xk, 2.1 + 0.1, zk - 1.25), 0.36, BLACK, mirror=True)
-    for y in np.linspace(2.6, 5.4, 5):                                    # dive brakes under the outer wing
-        p.box(w.le_x(y) - 0.55, w.le_x(y) - 0.42, y - 0.3, y + 0.3, w.z_at(y) - 0.42, w.z_at(y) - 0.28, DARK,
-              mirror=True)
-    bomb(p, 5.9, 8.0, 0.26, z=-1.25)                                       # SC 500
-    bomb(p, 6.9, 7.8, 0.13, y=3.4, z=w.z_at(3.4) - 0.35, mirror=True)    # SC 50s
+    # Ju 87G "Kanonenvogel": two 3.7 cm BK 3,7 gun pods under the outer wings
+    for y in (2.9,):
+        xl = w.le_x(y)
+        zp = w.z_at(y) - 0.42
+        p.fuselage([(xl - 1.6, 0.08, 0.08, zp), (xl - 1.1, 0.20, 0.22, zp), (xl + 0.2, 0.20, 0.22, zp),
+                    (xl + 0.55, 0.12, 0.12, zp)], n=2.0, y0=y, main=False, mirror=True)
+        p.box(xl - 1.0, xl - 0.2, y - 0.1, y + 0.1, zp, w.z_at(y), DARK, mirror=True)       # pylon
+        p.cyl((xl + 0.4, y, zp), (xl + 1.6, y, zp), 0.06, GUN, mirror=True)                # long barrel
+        p.cyl((xl + 1.45, y, zp), (xl + 1.65, y, zp), 0.1, GUN, mirror=True)               # muzzle brake
     p.surface(1.5, 1.3, 0.9, 4.9, sweep=4, z0=0.55, tips=0.2)
     fin = Fin(1.55, 1.55, 0.8, 1.6, 0.6, sweep=14, tips=0.35).build(p)
     p.canopy(5.1, 8.7, 0.38, 0.46, 0.76, style='framed', frames=(5.7, 6.4, 7.1, 7.8, 8.3), rail=0.55)
