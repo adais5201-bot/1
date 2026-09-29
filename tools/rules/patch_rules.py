@@ -96,6 +96,17 @@ class Ini:
                     out.append(m.group(2).strip().decode('latin1'))
         return out
 
+    def list_section(self, sec):
+        s, e = self._range(sec)
+        out = []
+        if s is None:
+            return out
+        for j in range(s + 1, e):
+            m = re.match(rb'\s*[^=;]+?\s*=\s*([^;\r]*)', self.lines[j])
+            if m and m.group(1).strip():
+                out.append(m.group(1).strip().decode('latin1'))
+        return out
+
     def delete(self, sec, key):
         s, e = self._range(sec)
         if s is None:
@@ -129,10 +140,10 @@ ATTITUDE = {('STFIGHTER', 'PitchAngle'): '0', ('STFIGHTER', 'RollAngle'): '0', (
 
 # ------------------------------------------------ 2. WWII fighters
 # Strafing: in YR an aircraft makes straight gun runs (fires along its path,
-# flies past the target and turns back) when its weapon's projectile has
-# ROT < 2 and Inviso=no, and the aircraft is not OmniFire. The old weapons used
-# homing projectiles (ROT=104) with OmniFire=yes, ROF=5, Burst=10 and
-# Speed=165, so the aircraft hovered and emptied a hail of fast bullets.
+# flies past the target and turns back) when its ground weapon's projectile
+# has ROT < 2 and Inviso=no. The old weapons used homing projectiles
+# (ROT=104) with ROF=5, Burst=10 and Speed=165: a hail of fast bullets that
+# ended fights at once. Air-to-air uses a separate homing Secondary weapon.
 #
 # unit: (aircraft, Speed, ROT, Strength, Ammo, ground weapon, air weapon)
 # Speed ~ real top speed / 60 km/h; ROT from the type's manoeuvrability;
@@ -160,30 +171,32 @@ FIGHTERS = {
 # weapon: (Damage, Burst, ROF, projectile Speed, Range, Projectile, Warhead, Report, Anim)
 GUN = ('ArnoldAttack', 'MGMUZZLE')
 WEAPONS = {
-    # ground attack (strafing runs)
-    'WW2_US50_P40':    (13, 3, 10, 60, 8, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
-    'WW2_US50':        (14, 3, 9, 60, 8, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,        # 6 x .50
-    'WW2_Hispano':     (22, 2, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x 20 mm + 2 x .50
-    'WW2_MG151':       (20, 2, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # MG 151/20 + 2 x MG 131
-    'WW2_Fw190Guns':   (26, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x MG 151/20 + 2 x MG 131
-    'WW2_MC205Guns':   (21, 2, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x MG 151/20 + 2 x Breda
-    'WW2_ShVAK_Yak':   (18, 2, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # ShVAK + 2 x UBS
-    'WW2_ShVAK_La':    (22, 2, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x ShVAK
-    'WW2_Type99':      (20, 2, 12, 50, 7, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x Type 99 20 mm, slow
-    'WW2_Ho5':         (22, 2, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
-    'WW2_Ho103':       (19, 2, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
-    'WW2_P38Nose':     (20, 4, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # concentrated nose battery
-    'WW2_MK108':       (55, 2, 14, 45, 7, 'WW2_StrafeCannonP', 'WW2_Cannon30WH') + GUN,  # 4 x MK 108 30 mm
-    'WW2_BK37':        (120, 1, 22, 50, 8, 'WW2_StrafeCannonP', 'WW2_Cannon37APWH') + GUN,  # 2 x BK 3,7 tank buster
-    'WW2_RP3Rockets':  (110, 2, 20, 40, 9, 'WW2_RocketP', 'WW2_RocketWH', 'MigAttack', None),  # RP-3 60 lb rockets
-    # air to air
-    'WW2_AirUS50':      (20, 5, 12, 70, 8, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
-    'WW2_Air20mmLight': (26, 3, 12, 65, 8, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    'WW2_Air20mm':      (30, 3, 12, 65, 8, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    'WW2_Air20mmHeavy': (30, 4, 12, 65, 8, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    'WW2_AirMK108':     (60, 2, 16, 55, 7, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
+    # ground attack (strafing runs): a pass kills a few infantry and takes
+    # roughly 10-15% off a light vehicle; only the 37 mm and rockets hurt tanks
+    'WW2_US50_P40':    (20, 4, 10, 60, 8, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
+    'WW2_US50':        (22, 4, 9, 60, 8, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,        # 6 x .50
+    'WW2_Hispano':     (30, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x 20 mm + 2 x .50
+    'WW2_MG151':       (28, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # MG 151/20 + 2 x MG 131
+    'WW2_Fw190Guns':   (32, 4, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x MG 151/20 + 2 x MG 131
+    'WW2_MC205Guns':   (29, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x MG 151/20 + 2 x Breda
+    'WW2_ShVAK_Yak':   (26, 3, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # ShVAK + 2 x UBS
+    'WW2_ShVAK_La':    (30, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x ShVAK
+    'WW2_Type99':      (28, 3, 12, 50, 7, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x Type 99 20 mm, slow
+    'WW2_Ho5':         (30, 3, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
+    'WW2_Ho103':       (26, 3, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
+    'WW2_P38Nose':     (26, 5, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # concentrated nose battery
+    'WW2_MK108':       (80, 2, 14, 45, 7, 'WW2_StrafeCannonP', 'WW2_Cannon30WH') + GUN,  # 4 x MK 108 30 mm
+    'WW2_BK37':        (200, 1, 22, 50, 8, 'WW2_StrafeCannonP', 'WW2_Cannon37APWH') + GUN,  # 2 x BK 3,7 tank buster
+    'WW2_RP3Rockets':  (180, 2, 20, 40, 9, 'WW2_RocketP', 'WW2_RocketWH', 'MigAttack', None),  # RP-3 60 lb rockets
+    # air to air: strongly homing tracer, long enough range to engage while
+    # both aircraft manoeuvre (needs OmniFire=yes on the fighter)
+    'WW2_AirUS50':      (24, 5, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
+    'WW2_Air20mmLight': (30, 3, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
+    'WW2_Air20mm':      (34, 3, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
+    'WW2_Air20mmHeavy': (34, 4, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
+    'WW2_AirMK108':     (70, 2, 16, 90, 11, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
     # carrier aircraft defensive / interception guns
-    'WW2_CarrierAirGun': (18, 4, 12, 70, 6, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
+    'WW2_CarrierAirGun': (20, 4, 12, 100, 8, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
 }
 
 PROJECTILES = '''
@@ -251,13 +264,13 @@ Arm=0
 High=no
 VeryHigh=no
 
-; air-to-air: slight lead so fighters can still hit a manoeuvring target
+; air-to-air: homing tracer so fighters can hit a manoeuvring aircraft
 [WW2_AirGunP]
 Image=DART
 Inviso=no
 Shadow=no
 Arcing=no
-ROT=20
+ROT=60
 Proximity=yes
 Ranged=yes
 AA=yes
@@ -278,7 +291,7 @@ WARHEADS = '''
 ; .50 cal / 12.7 mm machine guns: deadly to infantry and soft vehicles,
 ; almost nothing against a Tiger's armour.
 [WW2_MG50WH]
-CellSpread=.15
+CellSpread=.3
 PercentAtMax=.5
 Verses=100%,85%,70%,55%,25%,6%,40%,20%,8%,30%,100%
 InfDeath=1
@@ -290,7 +303,7 @@ Wood=yes
 
 ; 20 mm cannon: good against light vehicles, weak against heavy tanks
 [WW2_Cannon20WH]
-CellSpread=.25
+CellSpread=.35
 PercentAtMax=.35
 Verses=100%,90%,80%,70%,40%,12%,60%,35%,15%,40%,100%
 InfDeath=3
@@ -380,16 +393,19 @@ CARRIERS = {'CARRIER': ('HornetLauncher', 'HORNET'),
 CARRIER_SIGHT = 12
 
 # ------------------------------------------------ 4. tank guns can miss
-# Direct-fire tank shells and vehicle machine guns: Proximity=yes let a round
-# burst as soon as it passed near the target and warheads had 1.2-2.5 cells
-# of splash, so every shot hit. Rounds now fly to a scattered point (Ares
-# BallisticScatter) and the kinetic splash is halved, so shots can miss.
+# The tank shells had ROT=1: any ROT above 0 is a homing round in YR, so it
+# followed its target and Inaccurate/BallisticScatter never took effect.
+# They now fly a flat ballistic trajectory (Arcing=yes, like artillery, whose
+# scatter works) at twice the old speed so the arc stays low and still reads
+# as a direct tracer shot, landing on a scattered point.
 TANK_SHELLS = ['HeavyShellP_D%d' % i for i in range(1, 8)] + ['TankShellP_D%d' % i for i in range(1, 9)]
-VEHICLE_MG = ['VehicleMGP_D%d' % i for i in range(1, 9)]
-SHELL_SCATTER = ('0', '1.2')
-MG_SCATTER = ('0', '0.8')
-SPLASH_FACTOR = 0.5
-SPLASH_MIN = 0.6
+SHELL_SCATTER = ('0.2', '1.5')
+SHELL_SPEED = 220
+# Splash: original radius for heavy tanks, graded down for medium and light
+# tanks; damage at the edge of the blast halved so infantry near the impact
+# go prone instead of all dying to one shell.
+SPLASH_CLASS = {'heavy': 1.0, 'medium': 0.8, 'light': 0.65}
+EDGE_DAMAGE_FACTOR = 0.5
 
 
 def weapons_of(ini, unit):
@@ -406,19 +422,6 @@ def weapons_of(ini, unit):
                 if v:
                     out.append(v)
     return out
-
-
-def tank_shell_warheads(ini):
-    """Warheads fired only through the tank shell projectiles."""
-    shells = set(p.upper() for p in TANK_SHELLS)
-    by_proj = {}
-    names = set(ini._sections())
-    for w in names:
-        proj = ini.get(w, 'Projectile')
-        wh = ini.get(w, 'Warhead')
-        if proj and wh and ini.get(w, 'Damage') is not None:
-            by_proj.setdefault(wh.upper(), set()).add(proj.upper())
-    return sorted(wh for wh, projs in by_proj.items() if projs <= shells and ini.has(wh))
 
 
 def main(src, dst):
@@ -452,7 +455,7 @@ def main(src, dst):
         ini.set(unit, 'ROT', rot)
         ini.set(unit, 'Strength', hp)
         ini.set(unit, 'Ammo', ammo)
-        ini.set(unit, 'OmniFire', 'no')
+        ini.set(unit, 'OmniFire', 'yes')          # needed to engage manoeuvring aircraft
         ini.set(unit, 'Fighter', 'yes')
         ini.set(unit, 'PitchSpeed', '1.1')
         log.append('%-9s %-22s Speed=%s ROT=%s Strength=%s Ammo=%s %s / %s' % (unit, plane, speed, rot, hp, ammo,
@@ -472,26 +475,44 @@ def main(src, dst):
             carrier, rng - 10, rng, spawn))
     assert (ini.get('Invisible3', 'AA') or '').lower() == 'yes'
 
+    shells = set(p.upper() for p in TANK_SHELLS)
     for p in TANK_SHELLS:
+        ini.set(p, 'Arcing', 'yes')
+        ini.set(p, 'ROT', '0')
         ini.set(p, 'Proximity', 'no')
         ini.set(p, 'Inaccurate', 'yes')
         ini.set(p, 'BallisticScatter.Min', SHELL_SCATTER[0])
         ini.set(p, 'BallisticScatter.Max', SHELL_SCATTER[1])
-    for p in VEHICLE_MG:
-        ini.set(p, 'Proximity', 'no')
-        ini.set(p, 'Inaccurate', 'yes')
-        ini.set(p, 'BallisticScatter.Min', MG_SCATTER[0])
-        ini.set(p, 'BallisticScatter.Max', MG_SCATTER[1])
-    whs = tank_shell_warheads(ini)
-    for wh in whs:
+    # weapons firing tank shells: faster so the ballistic arc stays flat;
+    # warheads graded by the heaviest armour class of the tanks using them
+    wh_class = {}
+    weapons_done = set()
+    rank = {'light': 0, 'medium': 1, 'heavy': 2}
+    for unit in ini.list_section('VehicleTypes'):
+        armor = (ini.get(unit, 'Armor') or '').lower()
+        cls = armor if armor in rank else 'medium'
+        for w in weapons_of(ini, unit):
+            if (ini.get(w, 'Projectile') or '').upper() not in shells:
+                continue
+            if w.upper() not in weapons_done:
+                sp = float(ini.get(w, 'Speed') or 0)
+                if sp < SHELL_SPEED:
+                    ini.set_everywhere(w, 'Speed', SHELL_SPEED)
+                weapons_done.add(w.upper())
+            wh = (ini.get(w, 'Warhead') or '').upper()
+            if wh and (wh not in wh_class or rank[cls] > rank[wh_class[wh]]):
+                wh_class[wh] = cls
+    counts = {}
+    for wh, cls in wh_class.items():
         vals = ini.all_values(wh, 'CellSpread')
         if vals:
-            cs = float(vals[-1])                      # the value the game ends up using
-            new = max(SPLASH_MIN, round(cs * SPLASH_FACTOR, 2))
-            if new < cs:
-                ini.set_everywhere(wh, 'CellSpread', '%g' % new)
-    log.append('tank shells scatter %s-%s cells, MGs %s-%s, %d shell warheads with halved splash' % (
-        SHELL_SCATTER + MG_SCATTER + (len(whs),)))
+            ini.set_everywhere(wh, 'CellSpread', '%g' % round(float(vals[-1]) * SPLASH_CLASS[cls], 2))
+        pm = ini.all_values(wh, 'PercentAtMax')
+        if pm:
+            ini.set_everywhere(wh, 'PercentAtMax', '%g' % round(float(pm[-1]) * EDGE_DAMAGE_FACTOR, 3))
+        counts[cls] = counts.get(cls, 0) + 1
+    log.append('tank shells: ballistic, scatter %s-%s cells, %d weapons at Speed %d; shell warheads %s' % (
+        SHELL_SCATTER + (len(weapons_done), SHELL_SPEED, counts)))
 
     open(dst, 'wb').write(ini.data())
     print('\n'.join(log))
