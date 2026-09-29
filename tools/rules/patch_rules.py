@@ -232,6 +232,11 @@ SKIN_UNITS = {
 }
 # skins whose art section pointed at the base model; they get their own model
 ART_OWN_IMAGE = ['FERDA', 'FERDB', 'GERNA', 'GERNB', 'GERNC', 'GERND', 'GERSA', 'GERZA', 'GERZB']
+# vehicle and ship skins with the same problem: [GERHB] Image=GERH showed the
+# base model although gerhb.vxl (and ...tur/...barl) ship with the mod
+ART_OWN_IMAGE += ['GERHB', 'GERHA', 'GEROA', 'GEROB', 'FERBA', 'GERJA', 'GERJB', 'GERIA', 'GERIB', 'GERIC',
+                  'FERAA', 'FERAB', 'FERCA', 'FERCB', 'FERCC', 'GERQA', 'GERKA', 'GERUA', 'GERXA', 'GERXB',
+                  'GERPA', 'GERPB', 'GERYA', 'GERYB', 'GERYC', 'GERYD', 'GERFA', 'GERFB', 'GERFC']
 AIR_RANGE_BONUS = 6
 
 # weapon: (Damage, Burst, ROF, projectile Speed, Range, Projectile, Warhead, Report, Anim)

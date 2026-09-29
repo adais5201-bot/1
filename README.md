@@ -36,7 +36,7 @@ python3 tools/rules/patch_rules.py 原版rulesmd.ini 新rulesmd.ini 原版artmd.
 - 伤害、连发、射速和弹头不变：连发 6～10 发，弹头带爆炸范围（机枪 0.5 格、20mm 0.6 格、30mm 0.8 格，边缘伤害 60～70%）。
 - 不带 `Inaccurate` 的弹药命中时会吸附到目标上，算直接命中。
 - **NAFAF（雅克-9）** 也换成二战武器：ShVAK 20mm 加 UBS 12.7mm，速度 10，血量 300，弹药 3。
-- **Me 262（原“基因突变机”，改名为“Me 262 喷气战斗机”，改在 `ra2md.csf`）**：4 门 MK108 30mm，和其他战斗机不一样。每发 75 伤害，但一次只打 4 发，射程 6，弹速 90。弹道 `WW2_MK108P` 用游戏里的炮弹图像，跟踪性差一些（`ROT=48`）：打轰炸机几发就能打下来，打灵活的战斗机容易打偏。飞机本身速度最快（14），但转弯最差。
+- **Me 262（燕式喷射战机）**：4 门 MK108 30mm，和其他战斗机不一样。每发 75 伤害，但一次只打 4 发，射程 6，弹速 90。弹道 `WW2_MK108P` 用游戏里的炮弹图像，跟踪性差一些（`ROT=48`）：打轰炸机几发就能打下来，打灵活的战斗机容易打偏。飞机本身速度最快（14），但转弯最差。
 - **渡鸦（Ju 87G）**：照原版渡鸦的斯图卡式攻击，弹道 `WW2_StukaP`（`ROT=1`、`Arm=2`、`Cluster=2`），第一枪连发 8 发 37mm，射程 10，只能对地。
 
 **武器命名：** 战斗机沿用自己原来的武器名，直接改数值（如 `MSSL2`、`Maverick9`、`ClusterMissile`，精英版为原名加 `E`）。原名被多个单位共用时才新建：火鸟 `MC205Guns`、NAFAF `Yak9Guns`。皮肤武器一律是原武器名加 a/b/c/d（如 `MSSL2a`、`MSSL2Ea`），不加 `WW2`。所有新节名都不超过 Ares 限制的 24 个字符。
@@ -51,14 +51,14 @@ python3 tools/rules/patch_rules.py 原版rulesmd.ini 新rulesmd.ini 原版artmd.
 
 | 飞机 | 机型 | 轰炸方式 |
 |---|---|---|
-| 黑曜 `ALPHA` | He 111 | 不变：自由落体串炸，大当量 |
-| 黑鲨 `JAFSD` | Ju 88 | 不变：俯冲抛射齐射 |
-| 隐形轰炸机 `B2BOMBER` | B-17G | 不变：高空地毯轰炸 |
-| 雷霆 `A10W` | A-26 | 不变：抛射爆破弹 |
-| 信号旗 `GERR` | Pe-2 | 保留精确俯冲制导投弹；弹体从导弹（`FESSILE`）换成新做的 FAB-250 炸弹 `WWFAB250` |
-| 红魔 `KPLN` | B-25J | **凝固汽油弹**：低空一趟投 6 个汽油弹箱 `WWNAPALM`，每个炸开 3 团火（`Cluster=3`）。爆炸动画和雷霆一样（`EXPLOLRG,BRRLEXP1`），烧步兵、轻型车辆和木质建筑，对重甲弱 |
-| 隐形战机 `F1172` | B-24D | **集束破片弹**：原来是导弹，现在一趟撒 7 颗散布的集束炸弹，每颗炸开 5 处（`Cluster=5`），专打步兵和轻型车辆 |
-| 暗星 `GERM` | 兰开斯特 | **“高脚柜”地震炸弹**：每次出击只带 1 枚（`Ammo=1`）`WWTALBOY`，瞄准后单发投下。伤害 520（精英 680），爆炸半径 3 格，对建筑 200%，会炸出弹坑、震动画面 |
+| 亨克尔 `ALPHA` | He 111 | 不变：自由落体串炸，大当量 |
+| 容克斯 `JAFSD` | Ju 88 | 不变：俯冲抛射齐射 |
+| 空中堡垒 `B2BOMBER` | B-17G | 不变：高空地毯轰炸 |
+| 入侵者攻击机 `A10W` | A-26 | 不变：抛射爆破弹 |
+| 佩-2 `GERR` | Pe-2 | 保留精确俯冲制导投弹；弹体从导弹（`FESSILE`）换成新做的 FAB-250 炸弹 `WWFAB250` |
+| 米切尔 `KPLN` | B-25J | **凝固汽油弹**：低空一趟投 6 个汽油弹箱 `WWNAPALM`，每个炸开 3 团火（`Cluster=3`）。爆炸动画和雷霆一样（`EXPLOLRG,BRRLEXP1`），烧步兵、轻型车辆和木质建筑，对重甲弱 |
+| 解放者 `F1172` | B-24D | **集束破片弹**：原来是导弹，现在一趟撒 7 颗散布的集束炸弹，每颗炸开 5 处（`Cluster=5`），专打步兵和轻型车辆 |
+| 兰开斯特 `GERM` | 兰开斯特 | **“高脚柜”地震炸弹**：每次出击只带 1 枚（`Ammo=1`）`WWTALBOY`，瞄准后单发投下。伤害 520（精英 680），爆炸半径 3 格，对建筑 200%，会炸出弹坑、震动画面 |
 
 武器沿用原来的名字（`TDNapalm`、`Maverick5`、`NafaRocketFan`，精英加 `E`），新弹道和弹头是 `WW2_NapalmP/WW2_NapalmWH`、`WW2_ClusterBombP/WW2_FragWH`、`WW2_TallboyP/WW2_TallboyWH`。
 
@@ -77,6 +77,55 @@ python3 tools/rules/patch_rules.py 原版rulesmd.ini 新rulesmd.ini 原版artmd.
 - `artmd.ini`：`FERDA/FERDB/GERNA-D/GERSA/GERZA/GERZB` 原来写着 `Image=基础单位`，直接用基础模型；现在改成用自己的皮肤模型。
 - 战斗机皮肤用和基础机一样的二战武器，再按 104 皮肤清单里的加成设计换算：伤害、射速、弹药、速度、血量。皮肤用自己原来的武器名（如 `MSSL2b`）。价格没动。
 - 黑曜（信天翁）和雷霆（太阳鸟）是轰炸机和攻击机，这次只换模型涂装，数值不动。
+
+### 7. 飞机名字
+
+原来很多名字和现在的二战原型对不上（“隐形轰炸机”其实是 B-17，“基因突变机”是 Me 262）。现在有历史绰号的用绰号，没有的用型号。只改了 `ra2md.csf` 里的单位名，皮肤保留自己的涂装名，只换前面的飞机名（`tools/rules/patch_csf.py`）。
+
+| 代码 | 原名 | 新名 | 原型 |
+|---|---|---|---|
+| ORCA / AORCA | 入侵者戰機 | 飛虎戰機 | P-40E（飞虎队） |
+| BEAG | 黑鷹戰機 | 野馬戰機 | P-51D Mustang |
+| STBOMBER | 光劍戰機 | 閃電戰機 | P-38L Lightning |
+| F2002 | 冰魄戰機 | 海盜戰機 | F4U Corsair |
+| B2BOMBER | 隱形轟炸機 | 空中堡壘轟炸機 | B-17G Flying Fortress |
+| F1172 | 隱形戰機 | 解放者轟炸機 | B-24D Liberator |
+| KPLN | 紅魔戰機 | 米切爾轟炸機 | B-25J Mitchell |
+| A10W | 雷霆攻擊機 | 入侵者攻擊機 | A-26B Invader |
+| HORNET | 黃蜂 | 無畏俯衝轟炸機 | SBD Dauntless |
+| J35 | 蓝鲨 | 復仇者魚雷機 | TBF Avenger |
+| SU34 | 鸭嘴兽 | 九七艦攻 | B5N2 |
+| FERD | 陣風戰機 | 颱風戰機 | Typhoon |
+| GERS | 螢火蟲戰機 | 噴火戰機 | Spitfire |
+| GERM | 暗星轟炸機 | 蘭開斯特轟炸機 | Lancaster |
+| FIREFOX | 火鳥戰機 | 灰狗戰機 | MC.205 Veltro（灰狗） |
+| BEAG2 | 基因突變機 | 燕式噴射戰機 | Me 262 Schwalbe（燕子） |
+| GERZ | 銀翼戰機 | 古斯塔夫戰機 | Bf 109G（“古斯塔夫”） |
+| GERL | 渡鴉戰機 | 炮鳥攻擊機 | Ju 87G Kanonenvogel（炮鸟） |
+| ALPHA | 黑曜戰機 | 亨克爾轟炸機 | He 111 |
+| JAFSD | 黑鯊戰機 | 容克斯轟炸機 | Ju 88 |
+| STFIGHTER | 蜂鳥戰機 | 雅克-3戰機 | Yak-3 |
+| NAFAF | 龍騎士戰機 | 雅克-9戰機 | Yak-9 |
+| GERN | 星火戰機 | 拉-5戰機 | La-5FN |
+| GERR | 信號旗戰鬥轟炸機 | 佩-2俯衝轟炸機 | Pe-2 |
+| JAPVP | 藍心戰機 | 零式戰機 | A6M2 |
+| JAGDS | 暗影戰機 | 疾風戰機 | Ki-84 |
+| F23 | 幽灵战机 | 飛燕戰機 | Ki-61 |
+
+Fw 190（`MIG2000`）原本就是型号名，没动；它的皮肤“急凍戰機”改成“Fw 190戰機”。
+
+### 8. 海岸炮（`GAGUN`）重画
+
+旧图是一个灰色扁圆盘加红灯，炮塔很小，像科幻炮台，和警戒哨塔、热卫激光塔、黑寡妇机炮那种钢架、沙袋、土色的风格不搭。现在是二战式炮位：混凝土炮座、一圈沙袋、土堤、弹药箱，上面是带装甲炮房和长炮管的海岸炮。受损图会被熏黑，沙袋也会被炸缺。
+
+- 由 `tools/shp/coastgun.py` 用体素建模后渲染成 SHP（`buildings/` 里的 `gagun.shp`、`gaguntur.shp`、`gagunmk.shp`）。
+- 画布尺寸、帧数（底座 3 张 + 3 张阴影，炮塔 32 个朝向 + 32 张阴影，建造动画 13 + 13）和对齐点都和旧文件一样，`rulesmd.ini` / `artmd.ini` 不用改。
+- 对比图在 `previews/defenses.png`。原版自带的防御（哨戒炮、机枪碉堡、防空炮、巨炮等）用的是游戏本体的图，压缩包里没有，所以没有放进对比图。
+
+### 9. 车辆、船只皮肤
+
+- 有 29 个车辆/船只皮肤在 `artmd.ini` 里写着 `Image=基础单位`（比如 `[GERHB] Image=GERH`）。游戏里显示的是基础单位的模型，皮肤自己的模型没用上，和之前飞机皮肤的问题一样。现在改成用自己的模型：`GERHA/B`、`GEROA/B`、`FERBA`、`GERJA/B`、`GERIA-C`、`FERAA/B`、`FERCA-C`、`GERQA`、`GERKA`、`GERUA`、`GERXA/B`、`GERPA/B`、`GERYA-D`、`GERFA-C`。这些皮肤的车体、炮塔、炮管文件都检查过，都在压缩包里。
+- `previews/vehicle_skin_review.png`：配色和二战风格最冲突的 18 个车辆/船只皮肤（左边是原版，右边两张是皮肤）。
 
 ## 修复了哪些“摇摇晃晃”的问题
 
@@ -148,6 +197,7 @@ python3 render.py preview.png ../../models/hornet   # 生成预览图
 - `builder.py`：体素化、法线计算、螺旋桨和 HVA 的生成。
 - `paint.py`：迷彩、国籍标志、面板线和阵营色。
 - `bombs.py`：三种新炸弹模型（FAB-250、凝固汽油弹箱、高脚柜）。
+- `tools/shp/shpio.py`：读写 SHP；`tools/shp/coastgun.py`：生成海岸炮的 SHP。
 - `tools/rules/patch_csf.py`：只改 `ra2md.csf` 里的单位名字，其余字符串原样保留。
 
 预览图在 `previews/`，每架飞机有俯视图和 RA2 视角图。
