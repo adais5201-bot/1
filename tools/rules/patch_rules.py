@@ -96,6 +96,25 @@ class Ini:
                     out.append(m.group(2).strip().decode('latin1'))
         return out
 
+    def replace_section(self, sec, pairs):
+        """Replace every key of an existing section (all duplicates) with pairs,
+        or append the section if it does not exist yet."""
+        starts = [i for i, l in enumerate(self.lines)
+                  if re.match(rb'\s*\[' + re.escape(sec.encode('latin1')) + rb'\]', l, re.I)]
+        if not starts:
+            self.append('[%s]\n' % sec + '\n'.join('%s=%s' % kv for kv in pairs))
+            return 'new'
+        for st in reversed(starts):
+            e = next((j for j in range(st + 1, len(self.lines)) if self.lines[j].lstrip().startswith(b'[')),
+                     len(self.lines))
+            for j in range(e - 1, st, -1):
+                if re.match(rb'\s*[^=;\s][^=;]*=', self.lines[j]):
+                    del self.lines[j]
+        self._idx = None
+        for k, v in pairs:
+            self.set(sec, k, v)
+        return 'replaced'
+
     def list_section(self, sec):
         s, e = self._range(sec)
         out = []
@@ -176,6 +195,19 @@ FIGHTERS = {
     'STBOMBER':  ('P-38L Lightning',      11, 3, 380, 3, 'WW2_P38Nose'),
     'NAFAF':     ('Yak-9',                10, 5, 300, 3, 'WW2_ShVAK_Yak9'),
 }
+
+# Weapon section each fighter uses. The unit's original weapon name is kept
+# (its values are replaced) unless another unit shares it: Maverick stays
+# with the P-40s, Maverick2 with the P-51s; FIREFOX and NAFAF get new names.
+# Elite = name + 'E', air-to-air Secondary = name + 'AA' / name + 'AAE';
+# skins use their own original names (name + a/b/c/d), AA: name + 'AA' + letter.
+WEAPON_NAME = {
+    'ORCA': 'Maverick', 'AORCA': 'Maverick', 'BEAG': 'Maverick2', 'F2002': 'MSSL2', 'FERD': 'Maverick9',
+    'GERS': 'StBomberSalvo', 'BEAG2': 'JafsdNeedles', 'GERZ': 'Beag2Hive', 'GERL': 'GroundBarrage',
+    'MIG2000': 'PlasmaRifle', 'FIREFOX': 'MC205Guns', 'STFIGHTER': 'ChainGun', 'GERN': 'ClusterMissile',
+    'JAPVP': 'MSSL3', 'JAGDS': 'BomMissile', 'F23': 'Maverick8', 'STBOMBER': 'Hellfire', 'NAFAF': 'Yak9Guns',
+}
+MAX_ID = 24          # Ares refuses type IDs longer than 24 characters
 
 # Skins (base unit + A/B/C): same WWII weapon as the base with the skin's
 # bonuses from the 104-skin design list, applied to the new stats.
@@ -400,6 +432,23 @@ Wood=yes
 '''
 
 
+def weapon_pairs(spec, elite=False):
+    dmg, burst, rof, speed, rng, proj, wh, report, anim = spec
+    if elite:
+        dmg = int(round(dmg * 1.15))
+        rof = max(rof - 1, 1)
+        rng = rng + 0.5
+    pairs = [('Damage', dmg), ('ROF', rof), ('Range', rng), ('Projectile', proj), ('Speed', speed),
+             ('Warhead', wh), ('Report', report), ('Burst', burst)]
+    if anim:
+        pairs += [('Anim', anim), ('Bright', 'yes')]
+    return pairs
+
+
+def scaled(spec, dm, rm):
+    return (int(round(spec[0] * dm)), spec[1], max(1, int(round(spec[2] * rm)))) + tuple(spec[3:])
+
+
 def weapon_block(name, spec, elite=False):
     dmg, burst, rof, speed, rng, proj, wh, report, anim = spec
     if elite:
@@ -461,21 +510,35 @@ def main(src, dst):
         ini.set(u, k, v)
     log.append('PitchSpeed=1.1 for %s; attitude fixes %s' % (', '.join(PITCH_SPEED_FIX), ATTITUDE))
 
-    # new projectiles / warheads / weapons
-    text = PROJECTILES + WARHEADS + '\n; ---- WWII aircraft weapons ------------------------------------------------\n'
-    for name, spec in WEAPONS.items():
-        text += weapon_block(name, spec) + '\n' + weapon_block(name, spec, elite=True) + '\n'
+    # new projectiles / warheads, carrier AA gun
+    text = PROJECTILES + WARHEADS
+    text += '\n' + weapon_block('WW2_CarrierAirGun', WEAPONS['WW2_CarrierAirGun']) + '\n'
+    text += weapon_block('WW2_CarrierAirGun', WEAPONS['WW2_CarrierAirGun'], elite=True) + '\n'
     for sec in sections_of(text):
         assert not ini.has(sec), 'section [%s] already exists' % sec
     ini.append(text)
 
-    for unit, (plane, speed, rot, hp, ammo, weapon) in FIGHTERS.items():
-        ini.set(unit, 'Primary', weapon)
-        ini.set(unit, 'ElitePrimary', weapon + 'E')
-        air = AIR_OF.get(weapon)
+    written = {}
+
+    def put(name, spec, elite):
+        assert len(name) <= MAX_ID, 'ID too long for Ares (%d > %d): %s' % (len(name), MAX_ID, name)
+        how = ini.replace_section(name, weapon_pairs(spec, elite))
+        written[name] = how
+
+    # fighters: WWII guns written under the unit's own weapon names
+    for unit, (plane, speed, rot, hp, ammo, gun) in FIGHTERS.items():
+        name = WEAPON_NAME[unit]
+        spec = WEAPONS[gun]
+        put(name, spec, False)
+        put(name + 'E', spec, True)
+        ini.set(unit, 'Primary', name)
+        ini.set(unit, 'ElitePrimary', name + 'E')
+        air = AIR_OF.get(gun)
         if air:
-            ini.set(unit, 'Secondary', air)
-            ini.set(unit, 'EliteSecondary', air + 'E')
+            put(name + 'AA', WEAPONS[air], False)
+            put(name + 'AAE', WEAPONS[air], True)
+            ini.set(unit, 'Secondary', name + 'AA')
+            ini.set(unit, 'EliteSecondary', name + 'AAE')
         else:
             ini.delete(unit, 'Secondary')
             ini.delete(unit, 'EliteSecondary')
@@ -487,25 +550,36 @@ def main(src, dst):
         ini.set(unit, 'Fighter', 'yes')
         ini.set(unit, 'PitchSpeed', '1.1')
         ini.set(unit, 'AirRangeBonus', AIR_RANGE_BONUS)
-        log.append('%-9s %-22s Speed=%s ROT=%s Strength=%s Ammo=%s %s' % (unit, plane, speed, rot, hp, ammo, weapon))
+        log.append('%-9s %-22s Speed=%s ROT=%s Strength=%s Ammo=%s %s / %s' % (
+            unit, plane, speed, rot, hp, ammo, name, (name + 'AA') if air else '-'))
 
-    skin_text = ''
+    # skins: the skin's own weapon names (original weapon + a/b/c/d)
     for skin, (base, dm, rm, ammo_add, spd_add, hp_m) in SKIN_UNITS.items():
-        _, speed, rot, hp, ammo, weapon = FIGHTERS[base]
-        dmg, burst, rof, pspeed, rng, proj, wh, report, anim = WEAPONS[weapon]
-        spec = (int(round(dmg * dm)), burst, max(1, int(round(rof * rm))), pspeed, rng, proj, wh, report, anim)
-        wname = '%s_%s' % (weapon, skin)
-        skin_text += weapon_block(wname, spec) + '\n' + weapon_block(wname, spec, elite=True) + '\n'
-        ini.set(skin, 'Primary', wname)
-        ini.set(skin, 'ElitePrimary', wname + 'E')
-        air = AIR_OF.get(weapon)
+        _, speed, rot, hp, ammo, gun = FIGHTERS[base]
+        base_name = WEAPON_NAME[base]
+        letter = skin[-1].lower()
+        prim = ini.get(skin, 'Primary')
+        eprim = ini.get(skin, 'ElitePrimary')
+        if prim and prim.lower() != base_name.lower() and prim.lower() not in (v.lower() for v in WEAPON_NAME.values()):
+            put(prim, scaled(WEAPONS[gun], dm, rm), False)
+            put(eprim, scaled(WEAPONS[gun], dm, rm), True)
+        else:                                    # skin shares the base weapon (FALCA, BEAGA)
+            assert (dm, rm) == (1.0, 1.0), skin
+            prim, eprim = base_name, base_name + 'E'
+            ini.set(skin, 'Primary', prim)
+            ini.set(skin, 'ElitePrimary', eprim)
+        air = AIR_OF.get(gun)
         if air:
-            a = WEAPONS[air]
-            aspec = (int(round(a[0] * dm)), a[1], max(1, int(round(a[2] * rm)))) + a[3:]
-            aname = '%s_%s' % (air, skin)
-            skin_text += weapon_block(aname, aspec) + '\n' + weapon_block(aname, aspec, elite=True) + '\n'
+            if (dm, rm) == (1.0, 1.0):
+                aname = base_name + 'AA'
+                eaname = base_name + 'AAE'
+            else:
+                aname = base_name + 'AA' + letter
+                eaname = base_name + 'AAE' + letter
+                put(aname, scaled(WEAPONS[air], dm, rm), False)
+                put(eaname, scaled(WEAPONS[air], dm, rm), True)
             ini.set(skin, 'Secondary', aname)
-            ini.set(skin, 'EliteSecondary', aname + 'E')
+            ini.set(skin, 'EliteSecondary', eaname)
         else:
             ini.delete(skin, 'Secondary')
             ini.delete(skin, 'EliteSecondary')
@@ -517,11 +591,12 @@ def main(src, dst):
         ini.set(skin, 'Fighter', 'yes')
         ini.set(skin, 'PitchSpeed', '1.1')
         ini.set(skin, 'AirRangeBonus', AIR_RANGE_BONUS)
-        log.append('  skin %-8s of %-7s Speed=%s Strength=%s Ammo=%s %s dmg=%s ROF=%s' % (
-            skin, base, speed + spd_add, int(round(hp * hp_m)), ammo + ammo_add, wname, spec[0], spec[2]))
-    for sec in sections_of(skin_text):
-        assert not ini.has(sec), sec
-    ini.append('; ---- WWII aircraft weapons: skins -----------------------------------------\n' + skin_text)
+        log.append('  skin %-8s of %-7s Speed=%s Strength=%s Ammo=%s %s/%s' % (
+            skin, base, speed + spd_add, int(round(hp * hp_m)), ammo + ammo_add, prim,
+            ini.get(skin, 'Secondary')))
+    log.append('weapon sections: %d replaced in place, %d new: %s' % (
+        sum(1 for v in written.values() if v == 'replaced'), sum(1 for v in written.values() if v == 'new'),
+        ', '.join(sorted(k for k, v in written.items() if v == 'new'))))
 
     for carrier, (launcher, spawn) in CARRIERS.items():
         rng = float(ini.get(launcher, 'Range'))
