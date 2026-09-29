@@ -206,15 +206,15 @@ WEAPON_NAME = {
 }
 # RGI mortar infantry: deployed weapon (Secondary, DeployFireWeapon=1) +2 damage
 MORTAR_DEPLOYED_BONUS = {'Thapao': 2, 'ThapaoE': 2}
-# coastal battery (GAGUN, only user of 190mm / CoastCannonP): twin guns fire
-# two shells per salvo (one per barrel), straight and not lobbed, so they hit
-# moving ships instead of landing where the target was
+# coastal battery (GAGUN, only user of 190mm): twin guns fire two shells per
+# salvo (one per barrel) with the heavy tanks' main-gun tracer shell
+# (HeavyShellP_D2: straight, as 潘兴 / 毁灭者 / 斐迪南) instead of the lobbed
+# CoastCannonP that landed where a moving ship had been
 RULES_SET = {
     ('190mm', 'Burst'): '2',
     ('190mm', 'Damage'): '180',
-    ('190mm', 'Speed'): '60',
-    ('CoastCannonP', 'Arcing'): 'no',
-    ('CoastCannonP', 'Image'): '120MM',
+    ('190mm', 'Projectile'): 'HeavyShellP_D2',
+    ('190mm', 'Speed'): '110',
 }
 MAX_ID = 24          # Ares refuses type IDs longer than 24 characters
 
@@ -699,12 +699,10 @@ def main(src, dst):
     print('\n'.join(log))
 
 
-# coastal battery (tools/shp/coastbattery.py): the twin barrels end 64 voxels
-# in front of the pivot, 21 voxels up (64 voxels per cell = 256 leptons;
-# 15 px per 104 leptons of height), so the shells leave the muzzles
-# Barrels sit 4.6 voxels either side of the centre line (18 leptons);
-# PrimaryFireDualOffset alternates the lateral offset, one shell per barrel.
-ART_SET = {('GAGUN', 'PrimaryFireFLH'): '256,18,84', ('GAGUN', 'PrimaryFireDualOffset'): 'yes'}
+# coastal battery (tools/shp/coastbattery.py): laser-tower base, twin-gun
+# turret on the dome; the barrels end 64 voxels in front of the pivot and
+# 39 voxels up (64 voxels per cell = 256 leptons; 15 px per 104 leptons)
+ART_SET = {('GAGUN', 'PrimaryFireFLH'): '256,18,156', ('GAGUN', 'PrimaryFireDualOffset'): 'yes'}
 
 
 def patch_art(src, dst):

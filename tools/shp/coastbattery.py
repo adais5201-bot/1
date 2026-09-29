@@ -1,22 +1,15 @@
-"""Coastal battery (GAGUN, 海岸炮) artwork: python3 coastbattery.py OUTDIR
+"""Coastal battery (GAGUN, 海岸炮) artwork: python3 coastbattery.py OUTDIR MOD_DIR
 
-A WWII coastal battery built as voxel models and rendered like
-pre-rendered building art:
-  base    board-formed concrete bastion with battered walls, a parapet ring
-          round the gun pit, a recessed entrance with a steel door, sandbag
-          piles, ammunition crates and a searchlight on the parapet
-  turret  heavy twin-gun armoured turret (field-grey steel, panel lines,
-          rivets, red house-colour side panels, rangefinder hood, blast bags)
-Texture: concrete formwork lines and rain streaks, steel panel lines and
-rivets, grime in crevices, wear on convex edges, dark outline.
+Base: the laser tower's base art (gghail / gahail: sandbag ring and steel
+dome, with its build-up), copied so the battery belongs to the same family
+as the mod's other defences. Turret: a heavy twin-gun armoured turret
+(glossy lavender-grey steel like the laser/sentry towers, red house-colour
+side panels, rangefinder hood, blast bags, long barrels) built as a voxel
+model and rendered onto the same 250x250 canvas and anchor, sitting on the
+dome: 32 facings (0 = north, counter-clockwise) + 32 shadows.
 
 NewTheater=yes: GG* files are used on temperate/urban/desert maps, GA* on
-snow maps (snow on the ground, parapet and turret roof). Canvas, frame
-layout and anchor are the ones of the original files, so only the firing
-position (artmd PrimaryFireFLH) follows the new barrels:
-  g?gun.shp     155x171, 3 images (normal, damaged, heavily damaged) + 3 shadows
-  g?guntur.shp  155x171, 32 facings (0 = north, counter-clockwise) + 32 shadows
-  g?gunmk.shp   155x171, build-up: 13 frames + 13 shadows
+snow maps. The firing position (artmd PrimaryFireFLH) follows the barrels.
 """
 import os
 import sys
@@ -29,8 +22,8 @@ sys.path.insert(0, os.path.join(HERE, '..', 'voxplane'))
 from builder import to_index                      # noqa: E402
 from shpio import write_shp                       # noqa: E402
 
-W, H = 155, 171
-GROUND = np.array([76.5, 97.0])     # screen position of the cell centre on the ground (original art)
+W, H = 250, 250                     # canvas of the laser tower base the gun now stands on
+GROUND = np.array([124.0, 136.5])   # cell centre on the ground (canvas centre + (-1, +11.5), as the 155x171 original)
 VOX = 64.0                          # voxels per cell (256 leptons)
 PX_X = np.array([30.0, 15.0]) / VOX
 PX_Y = np.array([-30.0, 15.0]) / VOX
@@ -44,26 +37,20 @@ HALF = (LIGHT + VIEW) / np.linalg.norm(LIGHT + VIEW)
 SHADOW_INDEX = 1
 
 # turret pivot height and barrel geometry (also used for the firing position)
-PIT_Z = 12.0
+PIT_Z = 30.0                        # top of the laser tower's dome (17.5 px above the ground)
 BARREL_Z = PIT_Z + 9.0
 MUZZLE_X = 64.0
 BARREL_Y = 4.6
 
-CONCRETE = (182, 176, 160)
-CONCRETE_D = (132, 128, 116)
-EARTH = (92, 82, 62)
 SNOW = (226, 230, 234)
 # colours of the mod's other defences: khaki-olive sandbags and the
 # lavender-grey steel of the laser tower / sentry tower
-BAG = (140, 132, 90)
-BAG_D = (92, 86, 58)
 STEEL = (134, 138, 154)
 STEEL_D = (84, 88, 106)
 STEEL_L = (178, 182, 198)
 CANVAS = (92, 84, 62)
 DARK = (34, 36, 38)
 HOUSE = (180, 180, 180)
-GLASS = (210, 214, 170)
 
 
 class Model:
@@ -95,107 +82,15 @@ class Model:
         self.occ &= ~mask
 
 
-def octagon(X, Y, R):
-    return np.maximum(np.maximum(np.abs(X), np.abs(Y)), (np.abs(X) + np.abs(Y)) / np.sqrt(2)) <= R
-
-
 def noise(shape, sigma, seed):
     rng = np.random.default_rng(seed)
     f = gaussian_filter(rng.standard_normal(shape), sigma)
     return f / (f.std() + 1e-9)
 
 
-# ------------------------------------------------------------------ base
-def base_model(damage=0, snow=False):
-    m = Model(92, 30)
-    X, Y, Z = m.X, m.Y, m.Z
-    rr = np.hypot(X, Y)
-    ang = np.arctan2(Y, X)
-    # ground apron with a few rocks
-    edge = 36 + 1.0 * np.sin(5 * ang) + 0.8 * np.sin(11 * ang + 2)
-    m.put((rr <= edge) & (Z < 1.0), SNOW if snow else EARTH)
-    # sandbag ring round the foot of the bastion: two courses of big bags
-    ring = (rr >= 28.5) & (rr <= 35.5)
-    course = np.where(Z < 3.4, 0, 1)
-    phase = (ang * 22 / (2 * np.pi) + 0.5 * course) % 1.0
-    bulge = 1.0 - 4 * (phase - 0.5) ** 2
-    ctop = np.where(course == 0, 3.4, 6.8)
-    btop = ctop - 1.6 * (1 - bulge) ** 2 - 0.45 * np.clip(rr - 33.5, 0, 9)
-    outer = 35.5 - 2.4 * (1 - bulge) ** 2 - 1.1 * course
-    bags = ring & (Z < btop) & (rr <= outer)
-    u0 = (X - Y) / np.sqrt(2)
-    bags &= ~((np.abs(u0) < 6.5) & ((X + Y) > 0))          # gap for the entrance
-    m.put(bags, BAG)
-    m.paint(bags & ((phase < 0.09) | (phase > 0.91) | (np.abs(Z - 3.4) < 0.4)), BAG_D)
-    rng = np.random.default_rng(7)
-    for _ in range(9):
-        a = rng.uniform(0, 2 * np.pi)
-        r = rng.uniform(31, 37)
-        cx, cy, s = r * np.cos(a), r * np.sin(a), rng.uniform(1.2, 2.2)
-        m.put(((X - cx) ** 2 + (Y - cy) ** 2 + (Z * 1.6) ** 2) <= s ** 2, (120, 114, 104))
-    # bastion: battered octagonal walls, parapet ring round the pit
-    wall_r = 29.5 - 0.18 * Z
-    bastion = octagon(X, Y, wall_r) & (Z < 17)
-    pit = octagon(X, Y, 21.5) & (Z >= PIT_Z)
-    body = bastion & ~pit
-    m.put(body, CONCRETE)
-    # formwork boards and rain streaks
-    m.shade(body & ((Z % 2.4) < 0.5), 0.9)
-    streak = noise(m.occ.shape, (0.8, 0.8, 6), 3)
-    m.shade(body & (streak > 1.3), 0.9)
-    m.shade(body & (Z < 2.5), 0.8)
-    # parapet coping and inner face
-    m.paint(bastion & (Z >= 16) & ~pit, (176, 170, 156))
-    m.paint(bastion & octagon(X, Y, 23) & ~octagon(X, Y, 21.5) & (Z >= PIT_Z), CONCRETE_D)
-    # pit floor with the steel turret race
-    m.put(octagon(X, Y, 21.5) & (Z >= PIT_Z - 1) & (Z < PIT_Z), CONCRETE_D)
-    m.put((rr <= 15.5) & (Z >= PIT_Z - 0.5) & (Z < PIT_Z + 0.8), STEEL_D, metal=True)
-    # house-colour band under the coping
-    m.paint(body & (Z >= 13.5) & (Z < 15.2) & ~octagon(X, Y, wall_r - 1.2), HOUSE, remap=True)
-    # recessed entrance on the south-east face, steel door, steps
-    u = (X - Y) / np.sqrt(2)
-    v = (X + Y) / np.sqrt(2)
-    m.cut((np.abs(u) < 5.5) & (v > 22.5) & (Z < 11) & (Z >= 1.5))
-    m.put((np.abs(u) < 5.5) & (v > 22.5) & (v < 24.2) & (Z < 11), CONCRETE_D)
-    door = (np.abs(u) < 3.4) & (v > 23.2) & (v < 24.6) & (Z >= 1.5) & (Z < 9)
-    m.put(door, STEEL_D, metal=True)
-    m.paint(door & (np.abs(u) < 2.8) & (Z >= 2) & (Z < 8.5), (86, 92, 88))
-    m.paint(door & (np.abs(Z - 5.0) < 0.45), STEEL_D)
-    m.put((np.abs(u) < 5.0) & (v > 27) & (v < 31) & (Z < 1.5 + np.clip(31 - v, 0, 4) * 0.5), CONCRETE_D)
-    # sandbag piles on the parapet (left and back)
-    for a0, n in ((2.1, 5), (3.6, 4), (4.9, 3)):
-        for k in range(n):
-            a = a0 + (k - n / 2) * 0.14
-            cx, cy = 26 * np.cos(a), 26 * np.sin(a)
-            bag = (((X - cx) / 2.8) ** 2 + ((Y - cy) / 1.8) ** 2 + ((Z - 18) / 1.1) ** 2) <= 1
-            m.put(bag, BAG)
-            m.paint(bag & (Z < 17.4), BAG_D)
-    # ammunition crates by the entrance, searchlight on the north-east corner
-    for cu, cv in ((-9.0, 26.0), (-6.5, 27.5)):
-        crate = (np.abs(u - cu) < 1.6) & (np.abs(v - cv) < 1.2) & (Z < 4.2)
-        m.put(crate, (96, 90, 60))
-        m.paint(crate & (Z > 3.6), (120, 112, 76))
-    sx, sy = 20.0, -20.0
-    m.put((np.hypot(X - sx, Y - sy) <= 1.0) & (Z >= 16) & (Z < 20), STEEL_D, metal=True)
-    lamp = (np.hypot(Y - sy, Z - 21.2) <= 2.1) & (np.abs(X - sx) <= 1.6)
-    m.put(lamp, STEEL, metal=True)
-    m.put((np.hypot(Y - sy, Z - 21.2) <= 1.6) & (X > sx + 1.2) & (X <= sx + 1.8), GLASS, metal=True)
-    if snow:
-        up = m.occ & ~np.roll(m.occ, -1, axis=2)
-        m.paint(up & (Z > 1), SNOW)
-    if damage:
-        rngd = np.random.default_rng(11 + damage)
-        chips = gaussian_filter((rngd.random(m.occ.shape) < 0.04 * damage).astype(float), 1.3) > 0.08
-        m.cut(body & chips & (Z > 4) & ~octagon(X, Y, wall_r - 2.5))
-        m.cut(chips & (Z > 16.5))
-        scorch = gaussian_filter(rngd.random(m.occ.shape), 3.5) > 0.5 - 0.02 * damage
-        m.rgb[scorch & m.occ] *= 0.6 - 0.1 * damage
-    return m
-
-
 # ------------------------------------------------------------------ turret
 def turret_model(snow=False):
-    m = Model(140, 34)
+    m = Model(140, int(PIT_Z) + 24)
     X, Y, Z = m.X, m.Y, m.Z
     z0 = PIT_Z
     # armoured gunhouse: sloped front and sides, flat roof, rear overhang
@@ -326,14 +221,14 @@ def firing_flh():
     return int(round(MUZZLE_X * lep)), 0, int(round(h))
 
 
-def build(out, prefix, snow):
-    imgs, shadows = [], []
-    for dmg in (0, 1, 2):
-        img, sh = render(base_model(dmg, snow), seed=dmg)
-        imgs.append(img)
-        shadows.append(np.where(sh & (img == 0), SHADOW_INDEX, 0).astype(np.uint8))
-    write_shp(os.path.join(out, prefix + 'gun.shp'), W, H, imgs + shadows)
-
+def build(out, src, prefix, snow):
+    """Base: the laser tower's base art (sandbag ring and steel dome, both
+    theaters, with its build-up), so the battery matches the mod's other
+    defences; the twin-gun turret is rendered onto the same canvas."""
+    import shutil
+    base = 'gahail' if snow else 'gghail'
+    shutil.copyfile(os.path.join(src, base + '.shp'), os.path.join(out, prefix + 'gun.shp'))
+    shutil.copyfile(os.path.join(src, base + 'mk.shp'), os.path.join(out, prefix + 'gunmk.shp'))
     tm = turret_model(snow)
     timgs, tsh = [], []
     north = np.radians(225.0)
@@ -343,29 +238,12 @@ def build(out, prefix, snow):
         timgs.append(img)
         tsh.append(np.where(sh, SHADOW_INDEX, 0).astype(np.uint8))
     write_shp(os.path.join(out, prefix + 'guntur.shp'), W, H, timgs + tsh)
-
-    bm = base_model(0, snow)
-    full = bm.occ.copy()
-    bups, bsh = [], []
-    for k in range(13):
-        bm.occ = full & (bm.Z < 1.5 + 21.0 * min(k + 1, 7) / 7)
-        img, sh = render(bm, seed=0)
-        if k >= 7:
-            tfull = tm.occ.copy()
-            if k < 12:
-                tm.occ = tfull & (tm.Z < PIT_Z + 16.0 * (k - 6) / 6)
-            ti, ts = render(tm, angle=north, seed=0)
-            tm.occ = tfull
-            img = np.where(ti > 0, ti, img)
-            sh |= ts
-        bups.append(img)
-        bsh.append(np.where(sh & (img == 0), SHADOW_INDEX, 0).astype(np.uint8))
-    write_shp(os.path.join(out, prefix + 'gunmk.shp'), W, H, bups + bsh)
-    print('%sgun / %sguntur / %sgunmk written; PrimaryFireFLH=%d,%d,%d' % ((prefix,) * 3 + firing_flh()))
+    print('%sgun / %sgunmk from %s, %sguntur rendered; PrimaryFireFLH=%d,%d,%d'
+          % ((prefix, prefix, base, prefix) + firing_flh()))
 
 
 if __name__ == '__main__':
-    out = sys.argv[1]
+    out, src = sys.argv[1], sys.argv[2]      # OUTDIR, folder with gghail*.shp / gahail*.shp
     os.makedirs(out, exist_ok=True)
-    build(out, 'gg', snow=False)
-    build(out, 'ga', snow=True)
+    build(out, src, 'gg', snow=False)
+    build(out, src, 'ga', snow=True)
