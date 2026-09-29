@@ -12,7 +12,7 @@ import os
 import sys
 
 import numpy as np
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import distance_transform_edt, gaussian_filter
 
 from builder import PALETTE, surface_normals, to_index
 from vxlio import read_vxl, write_vxl
@@ -140,9 +140,82 @@ def livery(side, top=None, lower=None, low=0.3, patches=None, flame=None, bands=
     return fn
 
 
+def ornate(base, trim, panel=None, panel_in=4.0, frames=(), ribs=None, hatch=None, side_bands=(),
+           emblem=None, lower=None, accents=()):
+    """Designed, mirror-symmetric livery (like the mod's 失落神殿 / 占星师 skins):
+    `trim` border following the hull outline on the upper surfaces and along
+    the top edge of the sides, concentric `frames` [(d_from, d_to, colour)]
+    measured from the outline, an inner `panel`, transverse `ribs`
+    (every, width, colour, inset), chevron `hatch` in the border
+    (colour, period, width, band), `side_bands` [(z_from, z_to, colour)],
+    a turret-roof `emblem` (shape, radius, colour) and a dark `lower` hull.
+    Colours may be RGB tuples or a palette index (int) for bright accents
+    (2 cyan, 9 light cyan, 5 yellow, 7 amber, 15 white)."""
+    def put(col, idx, mask, c):
+        if isinstance(c, int):
+            idx[mask] = c
+        else:
+            col[mask] = c
+            idx[mask] = -1
+
+    def fn(ctx):
+        n = len(ctx.P)
+        col = np.tile(np.array(base, float), (n, 1))
+        idx = np.full(n, -1)
+        top, d, sy, x, zs = ctx.top, ctx.d, ctx.sy, ctx.P[:, 0], ctx.zs
+        side = ~top
+        if panel is not None:
+            put(col, idx, top & (d >= panel_in), panel)
+        for d0, d1, c in frames:
+            put(col, idx, top & (d >= d0) & (d < d1), c)
+        if ribs is not None:
+            every, width, c, inset = ribs
+            put(col, idx, top & (d >= inset) & ((x % every) < width), c)
+        for z0, z1, c in side_bands:
+            put(col, idx, side & (zs >= z0) & (zs < z1), c)
+        put(col, idx, top & (d < 1.6), trim)
+        put(col, idx, side & (zs >= 0.86) & (d < 3.0), trim)
+        if hatch is not None:
+            c, period, width, band = hatch
+            put(col, idx, top & (d >= 1.6) & (d < band) & (((x + sy) % period) < width), c)
+        for c, dd, ww in accents:                     # thin accent line at a distance from the outline
+            put(col, idx, top & (np.abs(d - dd) < ww / 2), c)
+        if emblem is not None and ctx.kind in ('tur', 'body_only'):
+            shape, r, c = emblem
+            cx = ctx.shape_xy[0] / 2.0
+            dx, dy = ctx.P[:, 0] - cx, sy
+            rr = np.hypot(dx, dy)
+            th = np.arctan2(dy, dx)
+            if shape == 'star':
+                m = rr <= r * (0.45 + 0.55 * np.abs(np.cos(4 * th)) ** 3)
+            elif shape == 'diamond':
+                m = (np.abs(dx) + np.abs(dy)) <= r
+            else:
+                m = np.abs(rr - r) < 0.9
+            put(col, idx, top & m, c)
+        if lower is not None:
+            put(col, idx, side & (zs < 0.22), lower)
+        if ctx.kind == 'barl':
+            col[:] = trim if not isinstance(trim, int) else base
+            idx[:] = -1
+        return col, idx
+    fn.ctx = True
+    return fn
+
+
 class Ctx:
-    def __init__(self, P, shape, N, zf):
+    def __init__(self, P, shape, N, zf, raw=None, filled=None, kind='body'):
         self.P, self.shape, self.N, self.zf = P, shape, N, zf
+        self.kind = kind
+        if raw is not None:                     # geometry for ornate liveries
+            foot = filled.any(2)
+            d2 = distance_transform_edt(np.pad(foot, 1))[1:-1, 1:-1]
+            self.d = d2[raw[:, 0], raw[:, 1]]
+            self.sy = np.abs(raw[:, 1] - (filled.shape[1] - 1) / 2.0)
+            self.zs = raw[:, 2] / max(filled.shape[2] - 1, 1)
+            self.top = N[:, 2] > 0.45
+            self.shape_xy = filled.shape[:2]
+            self.P = raw
 
 
 GOLD = (204, 166, 84)
@@ -156,23 +229,10 @@ US_OD = (92, 92, 60)
 
 # skin: (base image, pattern, name)
 SCHEMES = {
-    'KAMMA':   ('KAMM', livery(DUNKELGELB, lower=(70, 64, 46), low=0.3,
-                               patches=[(OLIVE_DE, 0.15, 7.0, 11), (ROTBRAUN, 0.7, 7.0, 12)]),
-                '战争收藏家: collector three-tone, large soft patches',
-                {'detail': 0.35, 'dark': 20}),
     'FERCB':   ('FERC', soft_blotches((196, 184, 148), [((88, 96, 76), 0.35)], 7.0, 13),
                 '破晓者: British 1942 light stone with soft dark green "Mickey Mouse" patches'),
     'GERJA':   ('GERJ', blotches(US_OD, [((100, 78, 52), 0.55), ((42, 42, 38), 0.95)], 4.5, 21),
                 '变色龙: US Normandy olive drab with black and earth brown'),
-    'PALEWB':  ('PALEW', livery((112, 118, 128), top=(206, 210, 214), lower=(58, 62, 70), low=0.45,
-                               top_min=0.85),
-                '深冬之狼: wolf grey with snow on the flat tops', {'detail': 0.25, 'dark': 8}),
-    'PALEWC':  ('PALEW', livery((222, 226, 232), top=(240, 242, 244), lower=(132, 142, 158), low=0.4,
-                               patches=[((164, 176, 192), 0.6, 4.0, 33)]),
-                '白夜猎手: arctic white with pale blue-grey patches', {'detail': 0.25, 'dark': 8}),
-    'GEROB':   ('GERO', livery((40, 48, 76), top=(150, 136, 110),
-                               bands=[(0.07, (150, 180, 204)), (0.30, (226, 230, 232))]),
-                '破冰者: ice-white superstructure, pale ice-blue hull, navy boot-top, wood decks'),
     'GERHA':   ('GERH', solid_weathered((76, 82, 88), (122, 112, 90), 0.35, 51),
                 '深海孤航: panzer grey, dust on the lower hull'),
     'HOUBEIA': ('HOUBEI', naval((60, 72, 88), (78, 82, 90)),
@@ -186,18 +246,46 @@ SCHEMES = {
     'GERAA':   ('GERA', livery((74, 56, 42), top=(222, 184, 104), top_min=0.8,
                                bands=[(0.12, (186, 104, 56)), (0.40, (214, 164, 86))]),
                 '流火: molten gradient, dark bronze to copper to gold', {'detail': 0.4}),
-    'NEWTNKA': ('NEWTNK', livery(BRONZE, top=GOLD, lower=(40, 38, 30), low=0.35),
-                '黄金罗盘: dark bronze with polished gold upper surfaces', {'detail': 0.45}),
-    'SSMA':    ('SSM', livery((176, 180, 186), top=(226, 230, 234), lower=(60, 66, 76), low=0.35, top_min=0.75,
-                              patches=[((132, 146, 164), 0.35, 4.5, 95)]),
-                '北境幽灵: ash-grey ghost with misty blue-grey patches, snowy tops', {'detail': 0.5}),
     'SSMB':    ('SSM', livery((62, 66, 74), top=(96, 100, 108), lower=(40, 42, 46), low=0.35,
                               patches=[((74, 82, 62), 0.3, 5.0, 91)]),
                 '不速之客: night raider graphite with soft dark olive patches'),
+    'NEWTNKA': ('NEWTNK', ornate((52, 58, 80), GOLD, panel=(40, 44, 62), panel_in=5.0,
+                                 frames=[(3.0, 4.2, GOLD)], accents=[(2, 6.5, 1.0)],
+                                 ribs=(7, 1, GOLD, 8.0), side_bands=[(0.55, 0.62, GOLD)],
+                                 emblem=('star', 6.5, GOLD), lower=(34, 36, 46)),
+                '黄金罗盘: navy slate, gold trim and frames, cyan line, gold compass star', {'detail': 0.35}),
+    'SSMA':    ('SSM', ornate((190, 198, 208), (58, 66, 82), panel=(166, 176, 190), panel_in=5.0,
+                              frames=[(3.0, 4.0, (58, 66, 82))], accents=[(9, 6.0, 1.0)],
+                              hatch=((58, 66, 82), 5, 1.6, 3.0), side_bands=[(0.48, 0.55, (58, 66, 82))],
+                              emblem=('diamond', 4.0, (58, 66, 82)), lower=(70, 78, 92)),
+                '北境幽灵: ice grey, slate border chevrons, light-cyan line', {'detail': 0.35}),
+    'PALEWB':  ('PALEW', ornate((72, 78, 88), (232, 234, 236), panel=(60, 64, 72), panel_in=4.5,
+                                frames=[(2.6, 3.4, (150, 158, 170))], hatch=((232, 234, 236), 6, 2.0, 4.5),
+                                side_bands=[(0.5, 0.58, (150, 158, 170))],
+                                emblem=('diamond', 3.5, (232, 234, 236)), lower=(40, 42, 48)),
+                '深冬之狼: charcoal with white fang chevrons and silver frames', {'detail': 0.3, 'dark': 8}),
+    'PALEWC':  ('PALEW', ornate((226, 230, 234), (36, 38, 44), panel=(210, 216, 224), panel_in=4.5,
+                                frames=[(2.8, 3.6, GOLD)], accents=[((36, 38, 44), 5.5, 0.9)],
+                                side_bands=[(0.5, 0.56, (36, 38, 44))],
+                                emblem=('star', 4.5, (36, 38, 44)), lower=(120, 128, 140)),
+                '白夜猎手: white with black trim and gold frame, black star', {'detail': 0.3, 'dark': 8}),
+    'KAMMA':   ('KAMM', ornate((72, 82, 52), (196, 158, 74), panel=(92, 60, 42), panel_in=12.0,
+                               frames=[(4.0, 5.2, (196, 158, 74)), (11.0, 12.0, (196, 158, 74))],
+                               hatch=(7, 7, 1.6, 3.5), side_bands=[(0.45, 0.58, (92, 60, 42))],
+                               emblem=('star', 6.0, (196, 158, 74)), lower=(46, 48, 34)),
+                '战争收藏家: olive with brass trim and double brass frame round a rust-brown panel, amber hatching',
+                {'detail': 0.3, 'dark': 20}),
+    'GERBA':   ('GERB', ornate((98, 124, 74), GOLD, panel=(150, 34, 26), panel_in=7.5,
+                               frames=[(5.5, 7.5, GOLD)], side_bands=[(0.52, 0.60, (150, 34, 26)), (0.60, 0.64, GOLD)],
+                               emblem=('star', 5.5, GOLD), lower=(52, 62, 42)),
+                '执旗者: Soviet green, gold-framed crimson centre panel, gold star', {'detail': 0.3}),
+    'GEROB':   ('GERO', ornate((222, 228, 232), (40, 52, 84), panel=(178, 190, 200), panel_in=4.0,
+                               frames=[(2.5, 3.4, 9)], ribs=(10, 1, (40, 52, 84), 4.0),
+                               side_bands=[(0.40, 0.46, 9)], lower=(40, 52, 84)),
+                '破冰者: ice white, navy trim and boot-top, cyan lines, grey decks', {'detail': 0.35}),
 }
 
-
-def repaint(sections, pattern, offset, detail=0.8, zsize=None, dark_max=48.0):
+def repaint(sections, pattern, offset, detail=0.8, zsize=None, dark_max=48.0, kind='body'):
     for s in sections:
         idx = s.color[s.filled].astype(int)
         rgb = PALETTE[idx].astype(float)
@@ -216,13 +304,17 @@ def repaint(sections, pattern, offset, detail=0.8, zsize=None, dark_max=48.0):
         if getattr(pattern, 'ctx', False):
             N = surface_normals(s.filled)[s.filled]
             zf = Pf[:, 2] / float(zsize or s.filled.shape[2])
-            col = pattern(Ctx(Pc, shape, N, zf))
+            res = pattern(Ctx(Pc, shape, N, zf, raw=P, filled=s.filled, kind=kind))
         else:
-            col = pattern(Pc, shape)
+            res = pattern(Pc, shape)
+        col, forced = res if isinstance(res, tuple) else (res, None)
         k = np.clip(lum / ref, 0.6, 1.35) ** detail
         new = np.clip(col * k[:, None], 0, 255)
         out = idx.copy()
         out[paint] = to_index(new[paint])
+        if forced is not None:
+            f = paint & (forced >= 0)
+            out[f] = forced[f]
         s.color[s.filled] = out
 
 
@@ -239,7 +331,10 @@ def reskin(src, out, skin):
         if not os.path.exists(path) or not os.path.exists(os.path.join(src, skin.lower() + suf + '.vxl')):
             continue
         v = read_vxl(path)
-        repaint(v['sections'], pattern, np.array(off), detail, zsize, dark_max)
+        kind = {'': 'body', 'tur': 'tur', 'barl': 'barl'}[suf]
+        if kind == 'body' and not os.path.exists(os.path.join(src, base.lower() + 'tur.vxl')):
+            kind = 'body_only'
+        repaint(v['sections'], pattern, np.array(off), detail, zsize, dark_max, kind)
         write_vxl(dst, v['sections'], v['pal'], v['remap'])
         print('%-12s <- %-12s %s' % (skin.lower() + suf, base.lower() + suf, SCHEMES[skin][2]))
 

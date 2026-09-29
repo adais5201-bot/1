@@ -686,10 +686,10 @@ def main(src, dst):
     print('\n'.join(log))
 
 
-# coastal gun (tools/shp/coastgun.py): the new barrel ends 58 voxels in front
-# of the pivot and 29 voxels up (56 voxels per cell = 256 leptons; 15 px per
-# 104 leptons of height), so the shot leaves the muzzle
-ART_SET = {('GAGUN', 'PrimaryFireFLH'): '265,0,133'}
+# coastal battery (tools/shp/coastbattery.py): the twin barrels end 64 voxels
+# in front of the pivot, 21 voxels up (64 voxels per cell = 256 leptons;
+# 15 px per 104 leptons of height), so the shells leave the muzzles
+ART_SET = {('GAGUN', 'PrimaryFireFLH'): '256,0,84'}
 
 
 def patch_art(src, dst):
