@@ -52,6 +52,10 @@ class W:
         if k['te_straight']:
             t = abs(y) / (k['b'] / 2)
             return (k['xle'] - k['cr']) + k['cr'] + (k['ct'] - k['cr']) * t
+        if k['ellip']:
+            B = k['b'] / 2
+            c = k['cr'] * np.sqrt(max(1 - (abs(y) / B) ** 2, 0))
+            return k['xle'] - k['qc'] * k['cr'] - abs(y) * np.tan(np.radians(k['sweep'])) + k['qc'] * c
         return k['xle'] - abs(y) * np.tan(np.radians(k['sweep']))
 
     def z_at(self, y):
@@ -70,7 +74,7 @@ class W:
         for y in ys:
             x = self.le_x(y)
             z = self.z_at(y) + dz
-            p.cyl((x - 0.05, y, z), (x + length, y, z), r, GUN, mirror=True)
+            p.cyl((x - 0.2, y, z), (x + length, y, z), r, GUN, mirror=True)
 
 
 class Fin:
@@ -137,10 +141,12 @@ def ball_turret(p, x, z, r, gun_len=1.0):
         p.cyl((x, off, z - 0.1), (x - r - gun_len, off, z - 0.35), 0.05, GUN)
 
 
-def bomb(p, x0, x1, r, y=0.0, z=0.0, mirror=False, mat=BOMB, fins=True):
+def bomb(p, x0, x1, r, y=0.0, z=0.0, mirror=False, mat=BOMB, fins=True, pylon=0.45):
     L = x1 - x0
     st = [(x0, r * 0.35, r * 0.35, z), (x0 + L * 0.3, r, r, z), (x1 - L * 0.25, r, r, z), (x1, r * 0.3, r * 0.3, z)]
     p.fuselage(st, n=2.0, y0=y, main=False, mat=mat, mirror=mirror)
+    # pylon so the store is attached to the airframe instead of floating
+    p.box(x0 + L * 0.35, x1 - L * 0.35, y - 0.1, y + 0.1, z + r * 0.5, z + r + pylon, DARK, mirror=mirror)
     if fins:
         for yy in ([y, -y] if mirror else [y]):
             p.box(x0 - 0.05, x0 + L * 0.2, yy - r * 1.1, yy + r * 1.1, z - 0.03, z + 0.03, mat)
@@ -215,34 +221,51 @@ def p51d():
 @reg('su37', 'P-38L Lightning')
 def p38l():
     L = 11.53
-    p = Plane('su37', 15.85, L + 0.4, height=2.2)
+    p = Plane('su37', 15.85, L + 0.4, height=2.4)
     yb = 2.9
-    # central nacelle (cockpit + guns)
-    p.fuselage([(5.2, 0.15, 0.15, 0.05), (6.2, 0.55, 0.62, 0.1), (8.0, 0.62, 0.72, 0.1), (9.8, 0.56, 0.62, 0.05),
-                (11.0, 0.40, 0.42, 0.0), (11.53, 0.2, 0.2, 0.0)], n=2.2)
-    # twin booms with Allison engines and turbo-superchargers
+    # central gondola: rounded gun nose, cockpit, tapering tail cone over the wing
+    p.fuselage([(4.9, 0.12, 0.12, 0.15), (5.8, 0.52, 0.55, 0.15), (7.2, 0.70, 0.80, 0.12), (9.0, 0.68, 0.76, 0.06),
+                (10.4, 0.55, 0.58, 0.0), (11.2, 0.38, 0.38, -0.02), (11.53, 0.16, 0.16, -0.02)], n=2.2)
+    # twin booms: fat Allison nacelles tapering into slim tail booms
     for sgn in (1, -1):
-        p.fuselage([(0.35, 0.18, 0.28, 0.20), (2.0, 0.26, 0.36, 0.12), (5.0, 0.36, 0.48, 0.05), (7.0, 0.50, 0.62, 0.02),
-                    (9.0, 0.52, 0.62, 0.0), (10.1, 0.42, 0.48, 0.0), (10.45, 0.32, 0.34, 0.0)], n=2.3,
-                   y0=sgn * yb, main=False)
-        p.ellipsoid((5.9, sgn * yb, 0.55), (0.55, 0.22, 0.2))                      # turbo fairing
-        p.fuselage([(2.9, 0.08, 0.1, 0.0), (3.4, 0.2, 0.34, 0.0), (4.2, 0.2, 0.34, 0.0)], n=2.0,
-                   y0=sgn * (yb + 0.38), main=False)                                 # coolant radiator scoops
-        p.spinner(10.4, 0.55, 0.30, y=sgn * yb, z=0.0)
-    w = W(8.55, 3.2, 1.1, 15.85, sweep=2.5, z0=0.0, dihedral=[(0, 0), (7.9, 0.30)], tips=0.08,
-          tc=(0.15, 0.09)).build(p)
-    # tailplane between the booms and twin fins (above and below the booms)
-    p.surface(1.65, 1.4, 1.4, 2 * yb + 0.3, sweep=0, z0=0.30, tips=0, tc=(0.12, 0.12))
-    fin = Fin(1.95, 1.35, 0.75, 2.05, -0.60, sweep=12, tips=0.45, y0=yb).build(p, mirror=True)
-    p.canopy(7.0, 8.9, 0.40, 0.50, 0.62, style='bubble', frames=(7.45, 8.4))
-    for dy, dz in ((0.12, 0.25), (-0.12, 0.25), (0.2, 0.05), (-0.2, 0.05), (0.0, -0.12)):
-        p.cyl((11.0, dy, dz), (11.85, dy, dz), 0.05, GUN)
-    p.prop((10.65, yb, 0.0), 3.5, 3, mirror=True)
+        y = sgn * yb
+        p.fuselage([(0.25, 0.20, 0.30, 0.22), (1.5, 0.26, 0.36, 0.16), (3.8, 0.36, 0.46, 0.10), (6.0, 0.55, 0.70, 0.05),
+                    (8.2, 0.62, 0.78, 0.0), (9.6, 0.58, 0.70, -0.04), (10.3, 0.46, 0.52, -0.02),
+                    (10.55, 0.36, 0.38, 0.0)], n=2.2, y0=y, main=False)
+        # chin intake under the propeller
+        p.fuselage([(8.6, 0.10, 0.08, -0.55), (9.3, 0.30, 0.22, -0.66), (10.1, 0.28, 0.20, -0.58)], n=2.2,
+                   y0=y, main=False)
+        p.ellipsoid((10.1, y, -0.58), (0.04, 0.22, 0.14), INTAKE)
+        # GE turbo-supercharger on top of the boom behind the wing
+        p.ellipsoid((5.9, y, 0.62), (0.75, 0.30, 0.22))
+        p.ellipsoid((5.9, y, 0.78), (0.28, 0.2, 0.08), METAL)
+        # coolant radiator scoops on the boom sides
+        for s2 in (1, -1):
+            p.fuselage([(2.6, 0.06, 0.08, 0.18), (3.2, 0.20, 0.32, 0.2), (4.4, 0.22, 0.34, 0.16), (4.9, 0.16, 0.24, 0.12)],
+                       n=2.0, y0=y + s2 * 0.36, main=False)
+            p.ellipsoid((3.22, y + s2 * 0.42, 0.2), (0.04, 0.14, 0.26), INTAKE)
+        p.spinner(10.5, 0.62, 0.34, y=y, z=0.0)
+        p.exhausts(7.3, 8.1, 2, y + sgn * 0.55, 0.3, size=0.1, mirror=False)
+    w = W(8.7, 3.25, 1.1, 15.85, sweep=2.5, z0=0.0, dihedral=[(0, 0), (yb, 0.0), (7.9, 0.30)], tips=0.1,
+          tc=(0.16, 0.09)).build(p)
+    # tailplane between the booms with elevator mass balance
+    p.surface(1.75, 1.45, 1.45, 2 * yb + 0.4, sweep=0, z0=0.32, tips=0, tc=(0.12, 0.12))
+    p.box(1.9, 2.2, -0.1, 0.1, 0.38, 0.62, DARK)
+    # the Lightning's oval twin fins, above and below each boom
+    fin = Fin(2.3, 2.0, 1.35, 2.5, -0.75, sweep=5, tips=0.6, y0=yb).build(p, mirror=True)
+    fin.build(p, mirror=True, xcr=(0.66, 0.70), mat=DARK, mode='paint')         # rudder hinge line
+    p.canopy(6.7, 8.8, 0.46, 0.55, 0.72, style='bubble', frames=(7.15, 8.3))
+    for dy, dz in ((0.14, 0.28), (-0.14, 0.28), (0.24, 0.08), (-0.24, 0.08), (0.0, -0.12)):
+        p.cyl((11.0, dy, dz), (11.95, dy, dz), 0.05, GUN)
+    p.prop((10.72, yb, 0.0), 3.5, 3, mirror=True)
     w.tips_remap(p, 0.93)
-    fin.top_remap(p, 0.82, mirror=True)
+    fin.top_remap(p, 0.8, mirror=True)
     lv = Livery(P.scheme_nmf())
-    lv.zone(lambda c: (c.x > 8.9) & (c.x < 11.2) & (c.nz > 0.55) & (np.abs(c.y) < 0.45), P.OD)
-    lv.top('us', 6.5, -5.8, 0.62, both=False).side('us', 4.6, 0.05, 0.36, ymax=None)
+    lv.zone(lambda c: (c.x > 8.9) & (c.x < 11.3) & (c.nz > 0.5) & (np.abs(c.y) < 0.5), P.OD)
+    lv.zone(lambda c: (c.x > 8.4) & (c.x < 10.3) & (c.nz > 0.55) & (np.abs(np.abs(c.y) - yb) < 0.25), P.OD)
+    lv.band(10.0, 10.45, 125, remap=True)                                  # squadron colour on the nacelle noses
+    lv.stripes(3.4, 0.36, 5, x_fus=5.6, fus_width=0.4)
+    lv.top('us', 7.0, -6.1, 0.62, both=False).side('us', 4.0, 0.12, 0.34)
     return p, lv
 
 
@@ -1023,6 +1046,7 @@ def b5n2():
                n=2.0, main=False, mat=METAL)
     p.box(4.2, 4.6, -0.32, 0.32, -1.03, -0.97, DARK)
     p.box(4.2, 4.6, -0.03, 0.03, -1.3, -0.7, DARK)
+    p.box(6.0, 7.2, -0.14, 0.14, -0.85, -0.40, DARK)                     # torpedo crutch
     p.prop((10.0, 0, 0.0), 3.2, 3, blade=IJ_PROP, tip=IJ_TIP)
     p.exhausts(8.9, 9.3, 3, 0.62, -0.15, size=0.08)
     w.tips_remap(p, 0.95)

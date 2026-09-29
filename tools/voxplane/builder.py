@@ -6,8 +6,9 @@ The finished model follows the conventions of the reference model NAFAF:
   * unit voxel spacing (bounds size == voxel count) for every section,
   * body bounds centred on x/y, about 30% of the height below the origin,
   * smooth normals computed from the geometry (RA2 normal mode 4),
-  * propellers as separate sections with the pivot on the hub and 2 identical
-    HVA frames, so frame switching in game cannot produce a flickering ghost.
+  * propellers as separate sections with the pivot on the hub, turning in
+    PROP_FRAMES small steps over one blade pitch (a 2-frame 60 degree flip of a
+    big propeller shows in game as a ghost rocking left and right).
 """
 import os
 
@@ -20,6 +21,8 @@ from vxlio import Section
 HERE = os.path.dirname(os.path.abspath(__file__))
 NORMALS = np.loadtxt(os.path.join(HERE, 'ra2_normals.txt'))
 PALETTE = np.loadtxt(os.path.join(HERE, 'ra2_unit_palette.txt')).astype(np.uint8)
+
+PROP_FRAMES = 6
 
 # Material labels
 SKIN, GLASS, FRAME, GUN, ENGINE, REMAP, BLACK, METAL, BOMB, INTAKE, YELLOW, WHITE, RED, EXHAUST, DARK = range(1, 16)
@@ -315,29 +318,29 @@ class Plane:
         body.minb = np.array([-size[0] / 2.0, -size[1] / 2.0, -round(size[2] * zfrac)])
         body.maxb = body.minb + np.array(size)
         sections = []
-        mats0 = []
-        mats1 = []
+        mats_frames = []
         for i, (hub, pd) in enumerate(self.props):
             sec = make_prop(self.s, pd, painter)
             sec.name = 'Propeller' if len(self.props) == 1 else 'Propeller%d' % (i + 1)
             cont = (hub - self.g0) * self.s - lo      # continuous index (voxel centre = i + 0.5)
             pos = body.minb + cont                    # body-space coordinate of hub
-            # Both HVA frames are identical. The game alternates the frames
-            # while the aircraft flies; a large propeller flipping between two
-            # blade positions reads as a ghost image rocking left and right.
             T = pos / sec.scale
-            m0 = np.eye(3, 4)
-            m0[:, 3] = T
-            m1 = m0.copy()
+            frames = []
+            for k in range(PROP_FRAMES):
+                # small steady steps over one blade pitch: the propeller turns
+                # smoothly instead of jumping between two blade positions
+                ang = np.radians(360.0 / pd['n'] * k / PROP_FRAMES) * (-1 if pd.get('flip') else 1)
+                m = np.eye(3, 4)
+                m[1, 1], m[1, 2], m[2, 1], m[2, 2] = np.cos(ang), -np.sin(ang), np.sin(ang), np.cos(ang)
+                m[:, 3] = T
+                frames.append(m)
             sections.append(sec)
-            mats0.append(m0)
-            mats1.append(m1)
+            mats_frames.append(frames)
         # NAFAF order: propellers first, body last
         sections.append(body)
-        mats0.append(np.eye(3, 4))
-        mats1.append(np.eye(3, 4))
-        nf = 2 if self.props else 1
-        mats = np.array([mats0, mats1][:nf])
+        nf = PROP_FRAMES if self.props else 1
+        mats_frames.append([np.eye(3, 4)] * nf)
+        mats = np.array(mats_frames).transpose(1, 0, 2, 3)    # (frames, sections, 3, 4)
         return sections, mats
 
 
