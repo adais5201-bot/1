@@ -162,7 +162,10 @@ def ornate(base, trim, panel=None, panel_in=4.0, frames=(), ribs=None, hatch=Non
         n = len(ctx.P)
         col = np.tile(np.array(base, float), (n, 1))
         idx = np.full(n, -1)
-        top, d, sy, x, zs = ctx.top, ctx.d, ctx.sy, ctx.P[:, 0], ctx.zs
+        # distances are in "飓风 voxels": the design keeps its proportions on
+        # wider hulls instead of shrinking to a thin line
+        k = ctx.scale
+        top, d, sy, x, zs = ctx.top, ctx.d / k, ctx.sy / k, ctx.P[:, 0] / k, ctx.zs
         side = ~top
         if panel is not None:
             put(col, idx, top & (d >= panel_in), panel)
@@ -182,8 +185,8 @@ def ornate(base, trim, panel=None, panel_in=4.0, frames=(), ribs=None, hatch=Non
             put(col, idx, top & (np.abs(d - dd) < ww / 2), c)
         if emblem is not None and ctx.kind in ('tur', 'body_only'):
             shape, r, c = emblem
-            cx = ctx.shape_xy[0] / 2.0
-            dx, dy = ctx.P[:, 0] - cx, sy
+            cx = ctx.shape_xy[0] / 2.0 / k
+            dx, dy = x - cx, sy
             rr = np.hypot(dx, dy)
             th = np.arctan2(dy, dx)
             if shape == 'star':
@@ -215,6 +218,7 @@ class Ctx:
             self.zs = raw[:, 2] / max(filled.shape[2] - 1, 1)
             self.top = N[:, 2] > 0.45
             self.shape_xy = filled.shape[:2]
+            self.scale = max(1.0, filled.shape[1] / 32.0)      # 飓风 (PALEW) hull is 32 wide
             self.P = raw
 
 
@@ -249,40 +253,45 @@ SCHEMES = {
     'SSMB':    ('SSM', livery((62, 66, 74), top=(96, 100, 108), lower=(40, 42, 46), low=0.35,
                               patches=[((74, 82, 62), 0.3, 5.0, 91)]),
                 '不速之客: night raider graphite with soft dark olive patches'),
-    'NEWTNKA': ('NEWTNK', ornate((52, 58, 80), GOLD, panel=(40, 44, 62), panel_in=5.0,
-                                 frames=[(3.0, 4.2, GOLD)], accents=[(2, 6.5, 1.0)],
-                                 ribs=(7, 1, GOLD, 8.0), side_bands=[(0.55, 0.62, GOLD)],
-                                 emblem=('star', 6.5, GOLD), lower=(34, 36, 46)),
-                '黄金罗盘: navy slate, gold trim and frames, cyan line, gold compass star', {'detail': 0.35}),
-    'SSMA':    ('SSM', ornate((190, 198, 208), (58, 66, 82), panel=(166, 176, 190), panel_in=5.0,
-                              frames=[(3.0, 4.0, (58, 66, 82))], accents=[(9, 6.0, 1.0)],
-                              hatch=((58, 66, 82), 5, 1.6, 3.0), side_bands=[(0.48, 0.55, (58, 66, 82))],
-                              emblem=('diamond', 4.0, (58, 66, 82)), lower=(70, 78, 92)),
-                '北境幽灵: ice grey, slate border chevrons, light-cyan line', {'detail': 0.35}),
+    # The liveries below follow 深冬之狼, the one that worked: a strong
+    # two-tone contrast, a bold chevron border, one thin frame, a simple emblem.
+    'NEWTNKA': ('NEWTNK', ornate((48, 44, 38), GOLD, panel=(40, 36, 32), panel_in=5.0,
+                                 frames=[(3.0, 3.8, (150, 120, 64))], hatch=(GOLD, 7, 2.2, 4.5),
+                                 side_bands=[(0.5, 0.57, (150, 120, 64))],
+                                 emblem=('star', 5.5, GOLD), lower=(30, 28, 26)),
+                '黄金罗盘: black bronze with gold chevrons, gold trim, gold compass star', {'detail': 0.3}),
+    'SSMA':    ('SSM', ornate((146, 160, 178), (236, 238, 240), panel=(128, 142, 162), panel_in=4.5,
+                              frames=[(2.6, 3.4, (70, 80, 98))], hatch=((236, 238, 240), 5, 1.8, 4.0),
+                              side_bands=[(0.5, 0.57, (70, 80, 98))],
+                              emblem=('diamond', 3.5, (236, 238, 240)), lower=(70, 80, 98)),
+                '北境幽灵: ice blue-grey with white chevrons, slate frame', {'detail': 0.3}),
     'PALEWB':  ('PALEW', ornate((72, 78, 88), (232, 234, 236), panel=(60, 64, 72), panel_in=4.5,
                                 frames=[(2.6, 3.4, (150, 158, 170))], hatch=((232, 234, 236), 6, 2.0, 4.5),
                                 side_bands=[(0.5, 0.58, (150, 158, 170))],
                                 emblem=('diamond', 3.5, (232, 234, 236)), lower=(40, 42, 48)),
                 '深冬之狼: charcoal with white fang chevrons and silver frames', {'detail': 0.3, 'dark': 8}),
-    'PALEWC':  ('PALEW', ornate((226, 230, 234), (36, 38, 44), panel=(210, 216, 224), panel_in=4.5,
-                                frames=[(2.8, 3.6, GOLD)], accents=[((36, 38, 44), 5.5, 0.9)],
-                                side_bands=[(0.5, 0.56, (36, 38, 44))],
-                                emblem=('star', 4.5, (36, 38, 44)), lower=(120, 128, 140)),
-                '白夜猎手: white with black trim and gold frame, black star', {'detail': 0.3, 'dark': 8}),
-    'KAMMA':   ('KAMM', ornate((72, 82, 52), (196, 158, 74), panel=(92, 60, 42), panel_in=12.0,
-                               frames=[(4.0, 5.2, (196, 158, 74)), (11.0, 12.0, (196, 158, 74))],
-                               hatch=(7, 7, 1.6, 3.5), side_bands=[(0.45, 0.58, (92, 60, 42))],
-                               emblem=('star', 6.0, (196, 158, 74)), lower=(46, 48, 34)),
-                '战争收藏家: olive with brass trim and double brass frame round a rust-brown panel, amber hatching',
+    'PALEWC':  ('PALEW', ornate((226, 230, 234), (40, 42, 48), panel=(212, 218, 226), panel_in=4.5,
+                                frames=[(2.6, 3.4, (150, 158, 170))], hatch=((40, 42, 48), 6, 2.0, 4.5),
+                                side_bands=[(0.5, 0.58, (150, 158, 170))],
+                                emblem=('diamond', 3.5, (40, 42, 48)), lower=(120, 128, 140)),
+                '白夜猎手: white with black fang chevrons and silver frame (深冬之狼 inverted)',
+                {'detail': 0.3, 'dark': 8}),
+    'KAMMA':   ('KAMM', ornate((74, 84, 52), (206, 180, 116), panel=(66, 76, 46), panel_in=5.0,
+                               frames=[(3.0, 3.8, ROTBRAUN)], hatch=((206, 180, 116), 6, 2.2, 4.5),
+                               side_bands=[(0.48, 0.58, ROTBRAUN)],
+                               emblem=('star', 5.0, (206, 180, 116)), lower=(46, 50, 34)),
+                '战争收藏家: dark olive with dunkelgelb chevrons and trim, red-brown frame, sand star',
                 {'detail': 0.3, 'dark': 20}),
-    'GERBA':   ('GERB', ornate((98, 124, 74), GOLD, panel=(150, 34, 26), panel_in=7.5,
-                               frames=[(5.5, 7.5, GOLD)], side_bands=[(0.52, 0.60, (150, 34, 26)), (0.60, 0.64, GOLD)],
-                               emblem=('star', 5.5, GOLD), lower=(52, 62, 42)),
-                '执旗者: Soviet green, gold-framed crimson centre panel, gold star', {'detail': 0.3}),
-    'GEROB':   ('GERO', ornate((222, 228, 232), (40, 52, 84), panel=(178, 190, 200), panel_in=4.0,
-                               frames=[(2.5, 3.4, 9)], ribs=(10, 1, (40, 52, 84), 4.0),
-                               side_bands=[(0.40, 0.46, 9)], lower=(40, 52, 84)),
-                '破冰者: ice white, navy trim and boot-top, cyan lines, grey decks', {'detail': 0.35}),
+    'GERBA':   ('GERB', ornate((108, 134, 80), GOLD, panel=(98, 122, 72), panel_in=5.0,
+                               frames=[(3.2, 4.0, GOLD)], hatch=((164, 36, 28), 7, 2.4, 3.2),
+                               side_bands=[(0.5, 0.6, (164, 36, 28))],
+                               emblem=('star', 5.5, GOLD), lower=(48, 58, 38)),
+                '执旗者: Soviet green with red banner chevrons, gold trim and frame, gold star',
+                {'detail': 0.15, 'dark': 10}),
+    'GEROB':   ('GERO', ornate((74, 92, 128), (236, 238, 240), panel=(66, 82, 116), panel_in=4.0,
+                               frames=[(2.4, 3.2, 9)], hatch=((236, 238, 240), 8, 2.5, 4.0),
+                               side_bands=[(0.40, 0.46, (236, 238, 240))], lower=(32, 40, 60)),
+                '破冰者: navy with white ice chevrons, light-cyan frame, white waterline', {'detail': 0.3}),
 }
 
 def repaint(sections, pattern, offset, detail=0.8, zsize=None, dark_max=48.0, kind='body'):

@@ -53,11 +53,13 @@ CONCRETE = (182, 176, 160)
 CONCRETE_D = (132, 128, 116)
 EARTH = (92, 82, 62)
 SNOW = (226, 230, 234)
-BAG = (132, 124, 86)
-BAG_D = (84, 78, 54)
-STEEL = (104, 110, 104)        # field grey
-STEEL_D = (66, 70, 68)
-STEEL_L = (140, 146, 138)
+# colours of the mod's other defences: khaki-olive sandbags and the
+# lavender-grey steel of the laser tower / sentry tower
+BAG = (140, 132, 90)
+BAG_D = (92, 86, 58)
+STEEL = (134, 138, 154)
+STEEL_D = (84, 88, 106)
+STEEL_L = (178, 182, 198)
 CANVAS = (92, 84, 62)
 DARK = (34, 36, 38)
 HOUSE = (180, 180, 180)
@@ -138,9 +140,9 @@ def base_model(damage=0, snow=False):
     body = bastion & ~pit
     m.put(body, CONCRETE)
     # formwork boards and rain streaks
-    m.shade(body & ((Z % 2.4) < 0.5), 0.8)
+    m.shade(body & ((Z % 2.4) < 0.5), 0.9)
     streak = noise(m.occ.shape, (0.8, 0.8, 6), 3)
-    m.shade(body & (streak > 1.0), 0.78)
+    m.shade(body & (streak > 1.3), 0.9)
     m.shade(body & (Z < 2.5), 0.8)
     # parapet coping and inner face
     m.paint(bastion & (Z >= 16) & ~pit, (176, 170, 156))
@@ -234,7 +236,7 @@ def turret_model(snow=False):
         up = m.occ & ~np.roll(m.occ, -1, axis=2)
         m.paint(up & (X < 16) & (Z > z0 + 8), SNOW)
     grime = noise(m.occ.shape, 1.5, 21)
-    m.shade(m.occ & ~m.remap & (grime > 1.2), 0.85)
+    m.shade(m.occ & ~m.remap & (grime > 1.8), 0.92)
     return m
 
 
@@ -262,11 +264,12 @@ def render(model, angle=0.0, seed=0):
     P = P @ R.T
     nrm = nrm @ R.T
     lam = np.clip(nrm @ LIGHT, 0, 1)
-    spec = np.clip(nrm @ HALF, 0, 1) ** 16 * np.where(metal, 0.28, 0.06)
-    wear = np.clip((0.55 - local) * 1.6, 0, 0.35)             # convex edges catch light
+    # broad glossy highlight on metal, like the pre-rendered defences
+    spec = np.clip(nrm @ HALF, 0, 1) ** 8 * np.where(metal, 0.5, 0.08)
+    wear = np.clip((0.55 - local) * 1.2, 0, 0.25)             # convex edges catch light
     rng = np.random.default_rng(seed)
-    grain = 1 + 0.05 * rng.standard_normal(len(P))
-    shade = (0.46 + 0.86 * lam) * (1.0 - 0.6 * np.clip(ao - 0.3, 0, 1)) * (1 + wear) * grain
+    grain = 1 + 0.01 * rng.standard_normal(len(P))           # smooth shading, no grain
+    shade = (0.5 + 0.85 * lam) * (1.0 - 0.45 * np.clip(ao - 0.3, 0, 1)) * (1 + wear) * grain
     col = np.clip(rgb * shade[:, None] + 255 * spec[:, None], 0, 255)
 
     scr = GROUND + P[:, 0:1] * PX_X + P[:, 1:2] * PX_Y
@@ -298,8 +301,8 @@ def render(model, angle=0.0, seed=0):
     crease = (zmax - zmin) > 8
     m = cov >= 0.45
     sil = m & binary_dilation(~m, iterations=1)
-    avg[sil] *= 0.62
-    avg[crease & m & ~sil] *= 0.82
+    avg[sil] *= 0.8
+    avg[crease & m & ~sil] *= 0.92
     remap = rbuf.reshape(H, SS, W, SS).mean((1, 3)) > 0.5
     img = np.zeros((H, W), np.uint8)
     img[m] = to_index(avg[m], remap[m])
