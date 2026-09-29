@@ -29,7 +29,7 @@ from builder import to_index                      # noqa: E402
 from shpio import write_shp                       # noqa: E402
 
 W, H = 155, 171
-GROUND = np.array([76.5, 99.0])     # screen position of the cell centre on the ground
+GROUND = np.array([76.5, 97.0])     # screen position of the cell centre on the ground (old art)
 VOX = 56.0                          # voxels per cell
 PX_X = np.array([30.0, 15.0]) / VOX           # screen step of +1 voxel along world x
 PX_Y = np.array([-30.0, 15.0]) / VOX          # ... along world y

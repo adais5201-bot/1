@@ -686,8 +686,16 @@ def main(src, dst):
     print('\n'.join(log))
 
 
+# coastal gun (tools/shp/coastgun.py): the new barrel ends 58 voxels in front
+# of the pivot and 29 voxels up (56 voxels per cell = 256 leptons; 15 px per
+# 104 leptons of height), so the shot leaves the muzzle
+ART_SET = {('GAGUN', 'PrimaryFireFLH'): '265,0,133'}
+
+
 def patch_art(src, dst):
     art = Ini(open(src, 'rb').read())
+    for (sec, key), val in ART_SET.items():
+        art.set(sec, key, val)
     for sec in ART_OWN_IMAGE:
         art.set(sec, 'Image', sec)
     for sec in BOMB_ART:
