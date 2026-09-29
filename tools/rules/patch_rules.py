@@ -158,21 +158,19 @@ PITCH_SPEED_FIX = ['A10W', 'KPLN', 'JAFSD', 'JAGDS', 'STFIGHTER', 'GERR', 'GERS'
 ATTITUDE = {('STFIGHTER', 'PitchAngle'): '0', ('STFIGHTER', 'RollAngle'): '0', ('B2BOMBER', 'RollAngle'): '0'}
 
 # ------------------------------------------------ 2. WWII fighters
-# How YR works (see Phobos docs on vanilla behaviour):
-# * An aircraft strafes -- flies a straight gun run over the target, firing
-#   5 times along its path, then turns back for the next run -- when its
-#   weapon's projectile has ROT < 2 and Inviso=no. Ammo is deducted once per
-#   run. In vanilla YR / Ares only the FIRST of the 5 shots uses Burst, so the
-#   dense part of the run comes from a big Burst on the opening shot.
+# * Every original fighter that could fight in the air has ONE weapon, the
+#   Primary, with a homing AA=yes AG=yes projectile and no Secondary. Tests
+#   showed fighters never attack aircraft with a ground-only Primary plus an
+#   AA Secondary, nor with a straight (ROT=1, strafing) AA Primary: aircraft
+#   fire their Primary only, and a ROT=1 round cannot hit a flying target.
+#   So the WWII guns are single homing guns like the original bullets
+#   (AircraftCannonP_D1: ROT=104, Proximity). Homing rounds (ROT >= 2) do not
+#   strafe: the fighter makes the classic firing pass of the original guns.
 # * A projectile without Inaccurate "snaps" to its target on impact and counts
-#   as a direct hit. Inaccurate=yes removes that, so a small-splash bullet
-#   deals no damage (what happened in the previous version). Ares
-#   BallisticScatter only works on Arcing=yes projectiles anyway.
-# * The fighters that already worked in the air (GERS, FERD, GERZ...) use one
-#   weapon with AA=yes and AG=yes; the new guns follow that layout.
+#   as a direct hit; the warheads also have a small splash.
 # The old weapons were homing (ROT=104) with ROF=5, Burst=10, Speed=165.
 #
-# unit: (aircraft, Speed, ROT, Strength, Ammo = strafing runs, weapon)
+# unit: (aircraft, Speed, ROT, Strength, Ammo, weapon)
 # Speed ~ real top speed / 60 km/h; ROT from manoeuvrability; Strength from
 # ruggedness.
 FIGHTERS = {
@@ -199,8 +197,7 @@ FIGHTERS = {
 # Weapon section each fighter uses. The unit's original weapon name is kept
 # (its values are replaced) unless another unit shares it: Maverick stays
 # with the P-40s, Maverick2 with the P-51s; FIREFOX and NAFAF get new names.
-# Elite = name + 'E', air-to-air Secondary = name + 'AA' / name + 'AAE';
-# skins use their own original names (name + a/b/c/d), AA: name + 'AA' + letter.
+# Elite = name + 'E'; skins use their own original names (name + a/b/c/d).
 WEAPON_NAME = {
     'ORCA': 'Maverick', 'AORCA': 'Maverick', 'BEAG': 'Maverick2', 'F2002': 'MSSL2', 'FERD': 'Maverick9',
     'GERS': 'StBomberSalvo', 'BEAG2': 'JafsdNeedles', 'GERZ': 'Beag2Hive', 'GERL': 'GroundBarrage',
@@ -238,32 +235,26 @@ ART_OWN_IMAGE = ['FERDA', 'FERDB', 'GERNA', 'GERNB', 'GERNC', 'GERND', 'GERSA', 
 AIR_RANGE_BONUS = 6
 
 # weapon: (Damage, Burst, ROF, projectile Speed, Range, Projectile, Warhead, Report, Anim)
-# One strafing run = Burst rounds on the opening shot + 4 single rounds.
-# Short Range: the aircraft opens fire close to the target, so the tracers go
-# down in a short straight line instead of being lobbed from far away.
+# Fighter guns: one homing gun for air and ground (see WW2_FighterGunP).
+# Range 7 (the original F4U/Fw 190 weapons used 7, the rest 14): the fighter
+# closes in before firing instead of shooting from far away.
 GUN = ('ArnoldAttack', 'MGMUZZLE')
 WEAPONS = {
-    'WW2_US50_P40':    (15, 10, 3, 160, 5, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
-    'WW2_US50':        (16, 10, 3, 160, 5, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
-    'WW2_Hispano':     (22, 8, 4, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x 20 mm + 2 x .50
-    'WW2_Hispano4':    (23, 9, 4, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # Typhoon 4 x 20 mm
-    'WW2_MG151':       (21, 8, 4, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # MG 151/20 + 2 x MG 131
-    'WW2_Fw190Guns':   (23, 9, 4, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x MG 151/20 + 2 x MG 131
-    'WW2_MC205Guns':   (21, 8, 4, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x MG 151/20 + 2 x Breda
-    'WW2_ShVAK_Yak':   (20, 8, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # ShVAK + 2 x UBS
-    'WW2_ShVAK_La':    (22, 8, 4, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x ShVAK
-    'WW2_Type99':      (21, 6, 5, 140, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Type 99 20 mm, slow
-    'WW2_Ho5':         (22, 8, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
-    'WW2_Ho103':       (20, 8, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
-    'WW2_P38Nose':     (20, 10, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # concentrated nose battery
-    'WW2_MK108':       (55, 6, 6, 130, 5, 'WW2_StrafeGunP', 'WW2_Cannon30WH') + GUN,    # 4 x MK 108 30 mm
-    'WW2_ShVAK_Yak9':  (20, 7, 3, 150, 5, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # Yak-9: ShVAK + UBS
-    # air to air (Secondary): homing tracer as the original fighter guns
-    # (AircraftCannonP: ROT=104, Proximity) that could engage aircraft
-    'WW2_AirMG':        (18, 6, 8, 120, 8, 'WW2_AirHomingP', 'WW2_AirMGWH') + GUN,
-    'WW2_Air20mm':      (24, 4, 8, 120, 8, 'WW2_AirHomingP', 'WW2_AirCannonWH') + GUN,
-    'WW2_Air20mmHeavy': (24, 6, 8, 120, 8, 'WW2_AirHomingP', 'WW2_AirCannonWH') + GUN,
-    'WW2_AirMK108':     (60, 2, 12, 110, 8, 'WW2_AirHomingP', 'WW2_AirCannonWH') + GUN,
+    'WW2_US50_P40':    (15, 10, 3, 160, 7, 'WW2_FighterGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
+    'WW2_US50':        (16, 10, 3, 160, 7, 'WW2_FighterGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
+    'WW2_Hispano':     (22, 8, 4, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x 20 mm + 2 x .50
+    'WW2_Hispano4':    (23, 9, 4, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # Typhoon 4 x 20 mm
+    'WW2_MG151':       (21, 8, 4, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # MG 151/20 + 2 x MG 131
+    'WW2_Fw190Guns':   (23, 9, 4, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x MG 151/20 + 2 x MG 131
+    'WW2_MC205Guns':   (21, 8, 4, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x MG 151/20 + 2 x Breda
+    'WW2_ShVAK_Yak':   (20, 8, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # ShVAK + 2 x UBS
+    'WW2_ShVAK_La':    (22, 8, 4, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x ShVAK
+    'WW2_Type99':      (21, 6, 5, 140, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Type 99 20 mm, slow
+    'WW2_Ho5':         (22, 8, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
+    'WW2_Ho103':       (20, 8, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
+    'WW2_P38Nose':     (20, 10, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,   # concentrated nose battery
+    'WW2_MK108':       (55, 6, 6, 130, 7, 'WW2_FighterGunP', 'WW2_Cannon30WH') + GUN,    # 4 x MK 108 30 mm
+    'WW2_ShVAK_Yak9':  (20, 7, 3, 150, 7, 'WW2_FighterGunP', 'WW2_Cannon20WH') + GUN,    # Yak-9: ShVAK + UBS
     # Ju 87G: Stuka-style dive attack as the old GERL (AirDesem), ground only
     'WW2_BK37':        (45, 8, 4, 95, 10, 'WW2_StukaP', 'WW2_Cannon37APWH') + GUN,     # 2 x BK 3,7
     # carrier aircraft defensive / interception guns (Secondary, as HORNET's
@@ -271,38 +262,26 @@ WEAPONS = {
     'WW2_CarrierAirGun': (20, 4, 12, 100, 8, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
 }
 
-# ground weapon -> air weapon (the Ju 87G has none: ground attack only)
-AIR_OF = {
-    'WW2_US50_P40': 'WW2_AirMG', 'WW2_US50': 'WW2_AirMG',
-    'WW2_Hispano': 'WW2_Air20mm', 'WW2_Hispano4': 'WW2_Air20mmHeavy', 'WW2_MG151': 'WW2_Air20mm',
-    'WW2_Fw190Guns': 'WW2_Air20mmHeavy', 'WW2_MC205Guns': 'WW2_Air20mm', 'WW2_ShVAK_Yak': 'WW2_Air20mm',
-    'WW2_ShVAK_La': 'WW2_Air20mm', 'WW2_Type99': 'WW2_Air20mm', 'WW2_Ho5': 'WW2_Air20mm',
-    'WW2_Ho103': 'WW2_Air20mm', 'WW2_P38Nose': 'WW2_Air20mmHeavy', 'WW2_MK108': 'WW2_AirMK108',
-    'WW2_ShVAK_Yak9': 'WW2_Air20mm',
-}
-
 PROJECTILES = '''
 ; ---- WWII aircraft guns --------------------------------------------------
-; ROT=1, Inviso=no: strafing runs against ground targets (same as the old
-; GERL's AirDesem). No Inaccurate, so each round snaps to its target and
-; counts as a hit; no Ranged, so a round is not cut off before it arrives.
-; AA=yes like every original fighter weapon: an aircraft only goes after
-; flying targets when its Primary can hit air. A ROT=1 round does not chase
-; a moving aircraft, but YR always takes the Secondary against air targets
-; when both weapons are AA, so dogfights use the homing Secondary below.
-[WW2_StrafeGunP]
+; Fighters: one gun for air and ground, as every original fighter that could
+; fight in the air (a single AA=yes AG=yes Primary, no Secondary; aircraft do
+; not fire a Secondary). Same as the original AircraftCannonP_D1 bullets:
+; homing tracer (ROT=104) that bursts next to the target (Proximity).
+[WW2_FighterGunP]
 Image=DART
 Inviso=no
 Shadow=no
 Arcing=no
-ROT=1
-Proximity=no
-Ranged=no
+ROT=104
+Proximity=yes
+Ranged=yes
 AA=yes
 AG=yes
 SubjectToCliffs=no
 SubjectToElevation=no
 SubjectToWalls=no
+Acceleration=8
 Arm=0
 High=no
 VeryHigh=no
@@ -321,26 +300,6 @@ SubjectToCliffs=no
 SubjectToElevation=no
 SubjectToWalls=no
 Cluster=2
-
-; fighters' air-to-air Secondary: same as the original AircraftCannonP
-; that fighters used to hit aircraft (homing ROT=104, Proximity)
-[WW2_AirHomingP]
-Image=DART
-Inviso=no
-Shadow=no
-Arcing=no
-ROT=104
-Proximity=yes
-Ranged=yes
-AA=yes
-AG=no
-Acceleration=8
-SubjectToCliffs=no
-SubjectToElevation=no
-SubjectToWalls=no
-Arm=0
-High=no
-VeryHigh=no
 
 ; carrier aircraft AA guns: homing tracer
 [WW2_AirGunP]
@@ -413,17 +372,7 @@ Conventional=yes
 Wall=yes
 Wood=yes
 
-; air-to-air cannon
-[WW2_AirCannonWH]
-CellSpread=.25
-PercentAtMax=.5
-Verses=100%,100%,90%,90%,75%,55%,70%,45%,20%,50%,100%
-InfDeath=3
-AnimList=TWLT050,S_CLSN58
-Wall=no
-Wood=yes
-
-; air-to-air machine guns (fighters and carrier aircraft)
+; carrier aircraft AA guns
 [WW2_AirMGWH]
 CellSpread=.15
 PercentAtMax=.5
@@ -537,15 +486,8 @@ def main(src, dst):
         put(name + 'E', spec, True)
         ini.set(unit, 'Primary', name)
         ini.set(unit, 'ElitePrimary', name + 'E')
-        air = AIR_OF.get(gun)
-        if air:
-            put(name + 'AA', WEAPONS[air], False)
-            put(name + 'AAE', WEAPONS[air], True)
-            ini.set(unit, 'Secondary', name + 'AA')
-            ini.set(unit, 'EliteSecondary', name + 'AAE')
-        else:
-            ini.delete(unit, 'Secondary')
-            ini.delete(unit, 'EliteSecondary')
+        ini.delete(unit, 'Secondary')             # aircraft only fire the Primary
+        ini.delete(unit, 'EliteSecondary')
         ini.set(unit, 'Speed', speed)
         ini.set(unit, 'ROT', rot)
         ini.set(unit, 'Strength', hp)
@@ -555,7 +497,7 @@ def main(src, dst):
         ini.set(unit, 'PitchSpeed', '1.1')
         ini.set(unit, 'AirRangeBonus', AIR_RANGE_BONUS)
         log.append('%-9s %-22s Speed=%s ROT=%s Strength=%s Ammo=%s %s / %s' % (
-            unit, plane, speed, rot, hp, ammo, name, (name + 'AA') if air else '-'))
+            unit, plane, speed, rot, hp, ammo, name, name + 'E'))
 
     # skins: the skin's own weapon names (original weapon + a/b/c/d)
     for skin, (base, dm, rm, ammo_add, spd_add, hp_m) in SKIN_UNITS.items():
@@ -572,21 +514,8 @@ def main(src, dst):
             prim, eprim = base_name, base_name + 'E'
             ini.set(skin, 'Primary', prim)
             ini.set(skin, 'ElitePrimary', eprim)
-        air = AIR_OF.get(gun)
-        if air:
-            if (dm, rm) == (1.0, 1.0):
-                aname = base_name + 'AA'
-                eaname = base_name + 'AAE'
-            else:
-                aname = base_name + 'AA' + letter
-                eaname = base_name + 'AAE' + letter
-                put(aname, scaled(WEAPONS[air], dm, rm), False)
-                put(eaname, scaled(WEAPONS[air], dm, rm), True)
-            ini.set(skin, 'Secondary', aname)
-            ini.set(skin, 'EliteSecondary', eaname)
-        else:
-            ini.delete(skin, 'Secondary')
-            ini.delete(skin, 'EliteSecondary')
+        ini.delete(skin, 'Secondary')
+        ini.delete(skin, 'EliteSecondary')
         ini.set(skin, 'Speed', speed + spd_add)
         ini.set(skin, 'ROT', rot)
         ini.set(skin, 'Strength', int(round(hp * hp_m)))
@@ -597,7 +526,7 @@ def main(src, dst):
         ini.set(skin, 'AirRangeBonus', AIR_RANGE_BONUS)
         log.append('  skin %-8s of %-7s Speed=%s Strength=%s Ammo=%s %s/%s' % (
             skin, base, speed + spd_add, int(round(hp * hp_m)), ammo + ammo_add, prim,
-            ini.get(skin, 'Secondary')))
+            eprim))
     log.append('weapon sections: %d replaced in place, %d new: %s' % (
         sum(1 for v in written.values() if v == 'replaced'), sum(1 for v in written.values() if v == 'new'),
         ', '.join(sorted(k for k, v in written.items() if v == 'new'))))
