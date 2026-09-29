@@ -139,71 +139,71 @@ PITCH_SPEED_FIX = ['A10W', 'KPLN', 'JAFSD', 'JAGDS', 'STFIGHTER', 'GERR', 'GERS'
 ATTITUDE = {('STFIGHTER', 'PitchAngle'): '0', ('STFIGHTER', 'RollAngle'): '0', ('B2BOMBER', 'RollAngle'): '0'}
 
 # ------------------------------------------------ 2. WWII fighters
-# Strafing: in YR an aircraft makes straight gun runs (fires along its path,
-# flies past the target and turns back) when its ground weapon's projectile
-# has ROT < 2 and Inviso=no. The old weapons used homing projectiles
-# (ROT=104) with ROF=5, Burst=10 and Speed=165: a hail of fast bullets that
-# ended fights at once. Air-to-air uses a separate homing Secondary weapon.
+# How YR works (see Phobos docs on vanilla behaviour):
+# * An aircraft strafes -- flies a straight gun run over the target, firing
+#   5 times along its path, then turns back for the next run -- when its
+#   weapon's projectile has ROT < 2 and Inviso=no. Ammo is deducted once per
+#   run. In vanilla YR / Ares only the FIRST of the 5 shots uses Burst, so the
+#   dense part of the run comes from a big Burst on the opening shot.
+# * A projectile without Inaccurate "snaps" to its target on impact and counts
+#   as a direct hit. Inaccurate=yes removes that, so a small-splash bullet
+#   deals no damage (what happened in the previous version). Ares
+#   BallisticScatter only works on Arcing=yes projectiles anyway.
+# * The fighters that already worked in the air (GERS, FERD, GERZ...) use one
+#   weapon with AA=yes and AG=yes; the new guns follow that layout.
+# The old weapons were homing (ROT=104) with ROF=5, Burst=10, Speed=165.
 #
-# unit: (aircraft, Speed, ROT, Strength, Ammo, ground weapon, air weapon)
-# Speed ~ real top speed / 60 km/h; ROT from the type's manoeuvrability;
-# Strength from its ruggedness.
+# unit: (aircraft, Speed, ROT, Strength, Ammo = strafing runs, weapon)
+# Speed ~ real top speed / 60 km/h; ROT from manoeuvrability; Strength from
+# ruggedness.
 FIGHTERS = {
-    'ORCA':      ('P-40E Warhawk',        10, 4, 340, 3, 'WW2_US50_P40', 'WW2_AirUS50'),
-    'AORCA':     ('P-40E Warhawk',        10, 4, 340, 3, 'WW2_US50_P40', 'WW2_AirUS50'),
-    'BEAG':      ('P-51D Mustang',        12, 4, 320, 3, 'WW2_US50', 'WW2_AirUS50'),
-    'F2002':     ('F4U-1D Corsair',       11, 4, 380, 3, 'WW2_US50', 'WW2_AirUS50'),
-    'FERD':      ('Typhoon Mk.Ib',        11, 3, 400, 2, 'WW2_RP3Rockets', 'WW2_Air20mm'),
-    'GERS':      ('Spitfire Mk.IX',       11, 5, 320, 3, 'WW2_Hispano', 'WW2_Air20mm'),
-    'BEAG2':     ('Me 262A-1a',           14, 3, 330, 2, 'WW2_MK108', 'WW2_AirMK108'),
-    'GERZ':      ('Bf 109G-6',            11, 4, 300, 3, 'WW2_MG151', 'WW2_Air20mm'),
-    'GERL':      ('Ju 87G-2 Kanonenvogel', 7, 3, 380, 3, 'WW2_BK37', None),
-    'MIG2000':   ('Fw 190F-8',            10, 4, 400, 3, 'WW2_Fw190Guns', 'WW2_Air20mmHeavy'),
-    'FIREFOX':   ('MC.205V Veltro',       11, 5, 300, 3, 'WW2_MC205Guns', 'WW2_Air20mm'),
-    'STFIGHTER': ('Yak-3',                11, 6, 290, 3, 'WW2_ShVAK_Yak', 'WW2_Air20mmLight'),
-    'GERN':      ('La-5FN',               11, 5, 340, 3, 'WW2_ShVAK_La', 'WW2_Air20mm'),
-    'JAPVP':     ('A6M2 Zero',             9, 6, 240, 2, 'WW2_Type99', 'WW2_Air20mmLight'),
-    'JAGDS':     ('Ki-84-I Hayate',       11, 5, 310, 3, 'WW2_Ho5', 'WW2_Air20mm'),
-    'F23':       ('Ki-61-I Hien',         10, 4, 320, 3, 'WW2_Ho103', 'WW2_Air20mmLight'),
-    'STBOMBER':  ('P-38L Lightning',      11, 3, 380, 3, 'WW2_P38Nose', 'WW2_Air20mmHeavy'),
+    'ORCA':      ('P-40E Warhawk',        10, 4, 340, 3, 'WW2_US50_P40'),
+    'AORCA':     ('P-40E Warhawk',        10, 4, 340, 3, 'WW2_US50_P40'),
+    'BEAG':      ('P-51D Mustang',        12, 4, 320, 3, 'WW2_US50'),
+    'F2002':     ('F4U-1D Corsair',       11, 4, 380, 3, 'WW2_US50'),
+    'FERD':      ('Typhoon Mk.Ib',        11, 3, 400, 3, 'WW2_Hispano4'),
+    'GERS':      ('Spitfire Mk.IX',       11, 5, 320, 3, 'WW2_Hispano'),
+    'BEAG2':     ('Me 262A-1a',           14, 3, 330, 2, 'WW2_MK108'),
+    'GERZ':      ('Bf 109G-6',            11, 4, 300, 3, 'WW2_MG151'),
+    'GERL':      ('Ju 87G-2 Kanonenvogel', 7, 3, 380, 3, 'WW2_BK37'),
+    'MIG2000':   ('Fw 190F-8',            10, 4, 400, 3, 'WW2_Fw190Guns'),
+    'FIREFOX':   ('MC.205V Veltro',       11, 5, 300, 3, 'WW2_MC205Guns'),
+    'STFIGHTER': ('Yak-3',                11, 6, 290, 3, 'WW2_ShVAK_Yak'),
+    'GERN':      ('La-5FN',               11, 5, 340, 3, 'WW2_ShVAK_La'),
+    'JAPVP':     ('A6M2 Zero',             9, 6, 240, 2, 'WW2_Type99'),
+    'JAGDS':     ('Ki-84-I Hayate',       11, 5, 310, 3, 'WW2_Ho5'),
+    'F23':       ('Ki-61-I Hien',         10, 4, 320, 3, 'WW2_Ho103'),
+    'STBOMBER':  ('P-38L Lightning',      11, 3, 380, 3, 'WW2_P38Nose'),
 }
 
 # weapon: (Damage, Burst, ROF, projectile Speed, Range, Projectile, Warhead, Report, Anim)
+# One strafing run = Burst rounds on the opening shot + 4 single rounds.
 GUN = ('ArnoldAttack', 'MGMUZZLE')
 WEAPONS = {
-    # ground attack (strafing runs): a pass kills a few infantry and takes
-    # roughly 10-15% off a light vehicle; only the 37 mm and rockets hurt tanks
-    'WW2_US50_P40':    (20, 4, 10, 60, 8, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,       # 6 x .50
-    'WW2_US50':        (22, 4, 9, 60, 8, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,        # 6 x .50
-    'WW2_Hispano':     (30, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x 20 mm + 2 x .50
-    'WW2_MG151':       (28, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # MG 151/20 + 2 x MG 131
-    'WW2_Fw190Guns':   (32, 4, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x MG 151/20 + 2 x MG 131
-    'WW2_MC205Guns':   (29, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x MG 151/20 + 2 x Breda
-    'WW2_ShVAK_Yak':   (26, 3, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # ShVAK + 2 x UBS
-    'WW2_ShVAK_La':    (30, 3, 10, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x ShVAK
-    'WW2_Type99':      (28, 3, 12, 50, 7, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,   # 2 x Type 99 20 mm, slow
-    'WW2_Ho5':         (30, 3, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
-    'WW2_Ho103':       (26, 3, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # 2 x Ho-5 + 2 x Ho-103
-    'WW2_P38Nose':     (26, 5, 9, 55, 8, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,    # concentrated nose battery
-    'WW2_MK108':       (80, 2, 14, 45, 7, 'WW2_StrafeCannonP', 'WW2_Cannon30WH') + GUN,  # 4 x MK 108 30 mm
-    'WW2_BK37':        (200, 1, 22, 50, 8, 'WW2_StrafeCannonP', 'WW2_Cannon37APWH') + GUN,  # 2 x BK 3,7 tank buster
-    'WW2_RP3Rockets':  (180, 2, 20, 40, 9, 'WW2_RocketP', 'WW2_RocketWH', 'MigAttack', None),  # RP-3 60 lb rockets
-    # air to air: strongly homing tracer, long enough range to engage while
-    # both aircraft manoeuvre (needs OmniFire=yes on the fighter)
-    'WW2_AirUS50':      (24, 5, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
-    'WW2_Air20mmLight': (30, 3, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    'WW2_Air20mm':      (34, 3, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    'WW2_Air20mmHeavy': (34, 4, 12, 100, 12, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    'WW2_AirMK108':     (70, 2, 16, 90, 11, 'WW2_AirGunP', 'WW2_AirCannonWH') + GUN,
-    # carrier aircraft defensive / interception guns
+    'WW2_US50_P40':    (20, 6, 5, 100, 10, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,        # 6 x .50
+    'WW2_US50':        (22, 6, 4, 100, 10, 'WW2_StrafeGunP', 'WW2_MG50WH') + GUN,        # 6 x .50
+    'WW2_Hispano':     (30, 4, 5, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # 2 x 20 mm + 2 x .50
+    'WW2_Hispano4':    (32, 5, 5, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # Typhoon 4 x 20 mm
+    'WW2_MG151':       (28, 4, 5, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # MG 151/20 + 2 x MG 131
+    'WW2_Fw190Guns':   (32, 5, 5, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # 2 x MG 151/20 + 2 x MG 131
+    'WW2_MC205Guns':   (29, 4, 5, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # 2 x MG 151/20 + 2 x Breda
+    'WW2_ShVAK_Yak':   (26, 4, 4, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # ShVAK + 2 x UBS
+    'WW2_ShVAK_La':    (30, 4, 5, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # 2 x ShVAK
+    'WW2_Type99':      (28, 3, 6, 90, 9, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,      # 2 x Type 99 20 mm, slow
+    'WW2_Ho5':         (30, 4, 4, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # 2 x Ho-5 + 2 x Ho-103
+    'WW2_Ho103':       (26, 4, 4, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # 2 x Ho-5 + 2 x Ho-103
+    'WW2_P38Nose':     (26, 6, 4, 95, 10, 'WW2_StrafeGunP', 'WW2_Cannon20WH') + GUN,     # concentrated nose battery
+    'WW2_MK108':       (75, 3, 8, 85, 9, 'WW2_StrafeGunP', 'WW2_Cannon30WH') + GUN,      # 4 x MK 108 30 mm
+    'WW2_BK37':        (200, 2, 10, 90, 10, 'WW2_StrafeAGP', 'WW2_Cannon37APWH') + GUN,  # 2 x BK 3,7, ground only
+    # carrier aircraft defensive / interception guns (Secondary, as HORNET's
+    # original AA Secondary)
     'WW2_CarrierAirGun': (20, 4, 12, 100, 8, 'WW2_AirGunP', 'WW2_AirMGWH') + GUN,
 }
 
 PROJECTILES = '''
 ; ---- WWII aircraft guns --------------------------------------------------
-; ROT=0 and Inviso=no: aircraft fly straight gun runs (strafing) against
-; ground targets. Inaccurate + Ares BallisticScatter spreads the rounds so a
-; pass walks its fire across the target instead of always hitting.
+; ROT=0, Inviso=no: strafing runs. No Inaccurate, so each round snaps to its
+; target and counts as a hit (air or ground).
 [WW2_StrafeGunP]
 Image=DART
 Inviso=no
@@ -212,11 +212,8 @@ Arcing=no
 ROT=0
 Proximity=no
 Ranged=yes
-AA=no
+AA=yes
 AG=yes
-Inaccurate=yes
-BallisticScatter.Min=0
-BallisticScatter.Max=0.7
 SubjectToCliffs=no
 SubjectToElevation=no
 SubjectToWalls=no
@@ -224,7 +221,8 @@ Arm=0
 High=no
 VeryHigh=no
 
-[WW2_StrafeCannonP]
+; the Ju 87G's 37 mm guns: ground targets only
+[WW2_StrafeAGP]
 Image=DART
 Inviso=no
 Shadow=no
@@ -234,9 +232,6 @@ Proximity=no
 Ranged=yes
 AA=no
 AG=yes
-Inaccurate=yes
-BallisticScatter.Min=0
-BallisticScatter.Max=0.5
 SubjectToCliffs=no
 SubjectToElevation=no
 SubjectToWalls=no
@@ -244,27 +239,7 @@ Arm=0
 High=no
 VeryHigh=no
 
-[WW2_RocketP]
-Image=DRAGON
-Inviso=no
-Shadow=yes
-Arcing=no
-ROT=0
-Proximity=no
-Ranged=yes
-AA=no
-AG=yes
-Inaccurate=yes
-BallisticScatter.Min=0.2
-BallisticScatter.Max=1.2
-SubjectToCliffs=no
-SubjectToElevation=no
-SubjectToWalls=no
-Arm=0
-High=no
-VeryHigh=no
-
-; air-to-air: homing tracer so fighters can hit a manoeuvring aircraft
+; carrier aircraft AA guns: homing tracer
 [WW2_AirGunP]
 Image=DART
 Inviso=no
@@ -275,7 +250,6 @@ Proximity=yes
 Ranged=yes
 AA=yes
 AG=no
-Inaccurate=no
 Acceleration=8
 SubjectToCliffs=no
 SubjectToElevation=no
@@ -293,7 +267,7 @@ WARHEADS = '''
 [WW2_MG50WH]
 CellSpread=.3
 PercentAtMax=.5
-Verses=100%,85%,70%,55%,25%,6%,40%,20%,8%,30%,100%
+Verses=100%,85%,70%,55%,30%,8%,40%,20%,8%,30%,100%
 InfDeath=1
 AnimList=PIFFPIFF,PIFF
 Bullets=yes
@@ -305,7 +279,7 @@ Wood=yes
 [WW2_Cannon20WH]
 CellSpread=.35
 PercentAtMax=.35
-Verses=100%,90%,80%,70%,40%,12%,60%,35%,15%,40%,100%
+Verses=100%,90%,80%,70%,45%,15%,60%,35%,15%,40%,100%
 InfDeath=3
 AnimList=TWLT050,S_CLSN58
 ProneDamage=60%
@@ -336,20 +310,7 @@ Conventional=yes
 Wall=yes
 Wood=yes
 
-; RP-3 60 lb rocket: strong but scattered
-[WW2_RocketWH]
-CellSpread=.8
-PercentAtMax=.3
-Verses=90%,80%,80%,100%,90%,70%,80%,60%,40%,60%,100%
-InfDeath=2
-AnimList=EXPLOSML,EXPLOMED
-ProneDamage=50%
-Conventional=yes
-Rocker=yes
-Wall=yes
-Wood=yes
-
-; air-to-air
+; carrier aircraft AA guns
 [WW2_AirMGWH]
 CellSpread=.15
 PercentAtMax=.5
@@ -357,15 +318,6 @@ Verses=100%,90%,80%,75%,60%,35%,50%,30%,10%,40%,100%
 InfDeath=1
 AnimList=PIFFPIFF,PIFF
 Bullets=yes
-Wall=no
-Wood=yes
-
-[WW2_AirCannonWH]
-CellSpread=.25
-PercentAtMax=.4
-Verses=100%,100%,90%,90%,75%,55%,70%,45%,20%,50%,100%
-InfDeath=3
-AnimList=TWLT050,S_CLSN58
 Wall=no
 Wood=yes
 '''
@@ -392,16 +344,19 @@ CARRIERS = {'CARRIER': ('HornetLauncher', 'HORNET'),
             'NODCARRI': ('SU34Launcher', 'SU34')}
 CARRIER_SIGHT = 12
 
-# ------------------------------------------------ 4. tank guns can miss
-# The tank shells had ROT=1: any ROT above 0 is a homing round in YR, so it
-# followed its target and Inaccurate/BallisticScatter never took effect.
-# They now fly a flat ballistic trajectory (Arcing=yes, like artillery, whose
-# scatter works) at twice the old speed so the arc stays low and still reads
-# as a direct tracer shot, landing on a scattered point.
-TANK_SHELLS = ['HeavyShellP_D%d' % i for i in range(1, 8)] + ['TankShellP_D%d' % i for i in range(1, 9)]
-SHELL_SCATTER = ('0.2', '1.5')
-SHELL_SPEED = 220
-# Warheads (splash radius, edge damage) are left exactly as in the original.
+# ------------------------------------------------ 4. the Tiger's gun can miss
+# Only the Tiger (CRUSADER and its three skins) is changed; every other tank
+# keeps the original rules.
+# Its shells used the shared HeavyShellP_D3/D7 with ROT=1: ROT above 0 is a
+# homing round, which follows its target, so it could never miss. Ares
+# BallisticScatter only applies to Inaccurate=yes AND Arcing=yes projectiles,
+# so the Tiger gets its own copies of those projectiles as flat ballistic
+# rounds (faster weapon speed keeps the arc low). The warheads are untouched:
+# BoocAPa has 1.8 cells of splash, so the scatter reaches beyond that for a
+# real miss.
+TIGERS = ['CRUSADER', 'CRUSADERA', 'CRUSADERB', 'CRUSADERC']
+TIGER_SCATTER = ('0.6', '2.6')
+TIGER_SHELL_SPEED = 220
 
 
 def weapons_of(ini, unit):
@@ -438,24 +393,19 @@ def main(src, dst):
         assert not ini.has(sec), 'section [%s] already exists' % sec
     ini.append(text)
 
-    for unit, (plane, speed, rot, hp, ammo, ground, air) in FIGHTERS.items():
-        ini.set(unit, 'Primary', ground)
-        ini.set(unit, 'ElitePrimary', ground + 'E')
-        if air:
-            ini.set(unit, 'Secondary', air)
-            ini.set(unit, 'EliteSecondary', air + 'E')
-        else:
-            ini.delete(unit, 'Secondary')
-            ini.delete(unit, 'EliteSecondary')
+    for unit, (plane, speed, rot, hp, ammo, weapon) in FIGHTERS.items():
+        ini.set(unit, 'Primary', weapon)
+        ini.set(unit, 'ElitePrimary', weapon + 'E')
+        ini.delete(unit, 'Secondary')
+        ini.delete(unit, 'EliteSecondary')
         ini.set(unit, 'Speed', speed)
         ini.set(unit, 'ROT', rot)
         ini.set(unit, 'Strength', hp)
         ini.set(unit, 'Ammo', ammo)
-        ini.set(unit, 'OmniFire', 'yes')          # needed to engage manoeuvring aircraft
+        ini.set(unit, 'OmniFire', 'yes')          # as the original fighters that could fight in the air
         ini.set(unit, 'Fighter', 'yes')
         ini.set(unit, 'PitchSpeed', '1.1')
-        log.append('%-9s %-22s Speed=%s ROT=%s Strength=%s Ammo=%s %s / %s' % (unit, plane, speed, rot, hp, ammo,
-                                                                               ground, air))
+        log.append('%-9s %-22s Speed=%s ROT=%s Strength=%s Ammo=%s %s' % (unit, plane, speed, rot, hp, ammo, weapon))
 
     for carrier, (launcher, spawn) in CARRIERS.items():
         rng = float(ini.get(launcher, 'Range'))
@@ -471,27 +421,36 @@ def main(src, dst):
             carrier, rng - 10, rng, spawn))
     assert (ini.get('Invisible3', 'AA') or '').lower() == 'yes'
 
-    shells = set(p.upper() for p in TANK_SHELLS)
-    for p in TANK_SHELLS:
-        ini.set(p, 'Arcing', 'yes')
-        ini.set(p, 'ROT', '0')
-        ini.set(p, 'Proximity', 'no')
-        ini.set(p, 'Inaccurate', 'yes')
-        ini.set(p, 'BallisticScatter.Min', SHELL_SCATTER[0])
-        ini.set(p, 'BallisticScatter.Max', SHELL_SCATTER[1])
-    # weapons firing tank shells: faster so the ballistic arc stays flat
-    weapons_done = set()
-    for unit in ini.list_section('VehicleTypes'):
-        for w in weapons_of(ini, unit):
-            if (ini.get(w, 'Projectile') or '').upper() not in shells:
-                continue
-            if w.upper() not in weapons_done:
-                sp = float(ini.get(w, 'Speed') or 0)
-                if sp < SHELL_SPEED:
-                    ini.set_everywhere(w, 'Speed', SHELL_SPEED)
-                weapons_done.add(w.upper())
-    log.append('tank shells: ballistic, scatter %s-%s cells, %d weapons at Speed %d; warheads unchanged' % (
-        SHELL_SCATTER + (len(weapons_done), SHELL_SPEED)))
+    # Tiger: private ballistic copies of its shell projectiles
+    copies = {}
+    tiger_weapons = []
+    for unit in TIGERS:
+        for k in ('Primary', 'ElitePrimary', 'Weapon1', 'EliteWeapon1'):
+            w = ini.get(unit, k)
+            if w and w not in tiger_weapons:
+                tiger_weapons.append(w)
+    for w in tiger_weapons:
+        proj = ini.get(w, 'Projectile')
+        if proj.upper().startswith('WW2_TIGER'):
+            continue
+        if proj.upper() not in copies:
+            name = 'WW2_Tiger' + proj
+            body = ['[%s]' % name]
+            s0, e0 = ini._range(proj)
+            for line in ini.lines[s0 + 1:e0]:
+                t = line.decode('latin1').strip()
+                if t and not t.startswith(';') and '=' in t:
+                    body.append(t)
+            ini.append('\n'.join(body))
+            for k, v in (('Arcing', 'yes'), ('ROT', '0'), ('Proximity', 'no'), ('Inaccurate', 'yes'),
+                         ('BallisticScatter.Min', TIGER_SCATTER[0]), ('BallisticScatter.Max', TIGER_SCATTER[1])):
+                ini.set(name, k, v)
+            copies[proj.upper()] = name
+        ini.set(w, 'Projectile', copies[proj.upper()])
+        if float(ini.get(w, 'Speed') or 0) < TIGER_SHELL_SPEED:
+            ini.set(w, 'Speed', TIGER_SHELL_SPEED)
+    log.append('Tiger guns %s: ballistic, scatter %s-%s cells, Speed %d, own projectiles %s' % (
+        tiger_weapons, TIGER_SCATTER[0], TIGER_SCATTER[1], TIGER_SHELL_SPEED, sorted(copies.values())))
 
     open(dst, 'wb').write(ini.data())
     print('\n'.join(log))
