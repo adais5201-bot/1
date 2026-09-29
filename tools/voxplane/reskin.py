@@ -1,4 +1,4 @@
-"""Repaint vehicle / ship skins in WWII colour schemes:
+"""Repaint vehicle / ship skins in WWII colour schemes (camouflage, no stripes):
 
     python3 reskin.py SRC_DIR OUT_DIR [SKIN ...]
 
@@ -42,17 +42,38 @@ def blotches(base, layers, sigma=5.0, seed=1, dots=None):
     return fn
 
 
-def bands(colours, width, direction=(1.0, 0.0, 0.0), wobble=0.0, seed=1):
-    """repeating bands across `direction` (diagonal bands for Caunter/dazzle)."""
-    d = np.array(direction, float)
-    d /= np.linalg.norm(d)
-
+def soft_blotches(base, layers, sigma=6.0, seed=1, edge=0.18):
+    """like blotches, with a soft blended edge instead of a hard cut."""
     def fn(P, shape):
-        t = P @ d
-        if wobble:
-            t = t + wobble * field(shape, 4.0, seed)[tuple(P.T)]
-        idx = np.floor(t / width).astype(int) % len(colours)
-        return np.array(colours, float)[idx]
+        col = np.tile(np.array(base, float), (len(P), 1))
+        for k, (c, thr) in enumerate(layers):
+            f = field(shape, sigma, seed + k)[tuple(P.T)]
+            w = np.clip((f - thr) / edge + 0.5, 0, 1)[:, None]
+            col = col * (1 - w) + np.array(c, float) * w
+        return col
+    return fn
+
+
+def mottle(base, spot, sigma=1.6, thr=0.9, seed=1):
+    """fine sponge mottle (US 1943 field-applied pattern)."""
+    def fn(P, shape):
+        col = np.tile(np.array(base, float), (len(P), 1))
+        f = field(shape, sigma, seed)[tuple(P.T)]
+        g = field(shape, 5.0, seed + 7)[tuple(P.T)]
+        col[(f > thr) & (g > -0.3)] = spot
+        return col
+    return fn
+
+
+def two_tone_naval(lower, upper, split=0.45, deck=None, top=0.8):
+    """Measure 22 style: dark lower hull up to a level line, light above."""
+    def fn(P, shape):
+        z = P[:, 2] / max(shape[2] - 1, 1)
+        col = np.tile(np.array(upper, float), (len(P), 1))
+        col[z <= split] = lower
+        if deck is not None:
+            col[z > top] = deck
+        return col
     return fn
 
 
@@ -84,16 +105,6 @@ def whitewash(white, under, seed=1):
     return fn
 
 
-def stripe_band(base, stripe, y_frac=(0.44, 0.56)):
-    def fn(P, shape):
-        col = np.tile(np.array(base, float), (len(P), 1))
-        y = P[:, 1] / max(shape[1] - 1, 1)
-        z = P[:, 2] / max(shape[2] - 1, 1)
-        col[(y > y_frac[0]) & (y < y_frac[1]) & (z > 0.45)] = stripe
-        return col
-    return fn
-
-
 DUNKELGELB = (190, 166, 108)
 OLIVE_DE = (84, 96, 58)
 ROTBRAUN = (116, 66, 44)
@@ -104,29 +115,26 @@ SCHEMES = {
     'KAMMA':   ('KAMM', blotches(DUNKELGELB, [(OLIVE_DE, 0.45), (ROTBRAUN, 0.75)], 6.0, 11,
                                   dots=(DUNKELGELB, 1.9)),
                 '战争收藏家: 1945 "Hinterhalt" ambush camouflage'),
-    'FERCB':   ('FERC', bands([(200, 188, 152), (150, 156, 150), (96, 104, 100)], 9.0, (1, 0.6, 0.9)),
-                '破晓者: British Caunter scheme (light stone / silver grey / slate)'),
+    'FERCB':   ('FERC', soft_blotches((196, 184, 148), [((88, 96, 76), 0.35)], 7.0, 13),
+                '破晓者: British 1942 light stone with soft dark green "Mickey Mouse" patches'),
     'GERJA':   ('GERJ', blotches(US_OD, [((100, 78, 52), 0.55), ((42, 42, 38), 0.95)], 4.5, 21),
                 '变色龙: US Normandy olive drab with black and earth brown'),
     'PALEWB':  ('PALEW', whitewash((220, 222, 216), (80, 86, 90), 31),
                 '深冬之狼: worn winter whitewash over grey'),
-    'GEROB':   ('GERO', bands([(204, 208, 206), (112, 142, 160), (204, 208, 206), (78, 96, 108)], 16.0,
-                              (1, 0.45, 0.0), wobble=1.0, seed=41),
-                '破冰者: Arctic dazzle (light grey / blue / dark grey)'),
+    'GEROB':   ('GERO', two_tone_naval((66, 82, 102), (178, 184, 188), 0.17),
+                '破冰者: Measure 22 (navy blue lower hull, haze grey above)'),
     'GERHA':   ('GERH', solid_weathered((76, 82, 88), (122, 112, 90), 0.35, 51),
                 '深海孤航: panzer grey, dust on the lower hull'),
     'HOUBEIA': ('HOUBEI', naval((60, 72, 88), (78, 82, 90)),
                 '午夜蓝调: US Navy Measure 21 navy blue, deck blue'),
-    'FEREA':   ('FERE', bands([(196, 170, 120), (196, 170, 120), (132, 74, 48)], 3.2, (1, 0.25, 0.5),
-                              wobble=2.5, seed=61),
-                '烈火: desert sand with red-brown streaks'),
+    'FEREA':   ('FERE', soft_blotches((198, 172, 122), [((136, 78, 50), 0.55)], 4.0, 61),
+                '烈火: desert sand with soft red-brown cloud'),
     'IDRAGB':  ('IDRAG', blotches((106, 118, 128), [((64, 74, 90), 0.35)], 3.0, 71),
                 '蓝闪蝶: blue-grey with dark slate-blue patches'),
-    'GERYC':   ('GERY', stripe_band(US_OD, (176, 146, 72)),
-                '圣杯: olive drab with a brass command stripe'),
-    'GERAA':   ('GERA', bands([DUNKELGELB, ROTBRAUN, DUNKELGELB, OLIVE_DE], 4.0, (1, 0.8, 0.3),
-                              wobble=3.0, seed=81),
-                '流火: dunkelgelb with flowing red-brown and olive'),
+    'GERYC':   ('GERY', mottle(US_OD, (150, 132, 92), 1.4, 0.85, 91),
+                '圣杯: olive drab with sand sponge mottle (Sicily 1943)'),
+    'GERAA':   ('GERA', soft_blotches(DUNKELGELB, [(OLIVE_DE, 0.2), (ROTBRAUN, 0.7)], 5.0, 81),
+                '流火: German three-tone, soft sprayed edges'),
 }
 
 
