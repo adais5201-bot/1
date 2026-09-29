@@ -401,11 +401,7 @@ CARRIER_SIGHT = 12
 TANK_SHELLS = ['HeavyShellP_D%d' % i for i in range(1, 8)] + ['TankShellP_D%d' % i for i in range(1, 9)]
 SHELL_SCATTER = ('0.2', '1.5')
 SHELL_SPEED = 220
-# Splash: original radius for heavy tanks, graded down for medium and light
-# tanks; damage at the edge of the blast halved so infantry near the impact
-# go prone instead of all dying to one shell.
-SPLASH_CLASS = {'heavy': 1.0, 'medium': 0.8, 'light': 0.65}
-EDGE_DAMAGE_FACTOR = 0.5
+# Warheads (splash radius, edge damage) are left exactly as in the original.
 
 
 def weapons_of(ini, unit):
@@ -483,14 +479,9 @@ def main(src, dst):
         ini.set(p, 'Inaccurate', 'yes')
         ini.set(p, 'BallisticScatter.Min', SHELL_SCATTER[0])
         ini.set(p, 'BallisticScatter.Max', SHELL_SCATTER[1])
-    # weapons firing tank shells: faster so the ballistic arc stays flat;
-    # warheads graded by the heaviest armour class of the tanks using them
-    wh_class = {}
+    # weapons firing tank shells: faster so the ballistic arc stays flat
     weapons_done = set()
-    rank = {'light': 0, 'medium': 1, 'heavy': 2}
     for unit in ini.list_section('VehicleTypes'):
-        armor = (ini.get(unit, 'Armor') or '').lower()
-        cls = armor if armor in rank else 'medium'
         for w in weapons_of(ini, unit):
             if (ini.get(w, 'Projectile') or '').upper() not in shells:
                 continue
@@ -499,20 +490,8 @@ def main(src, dst):
                 if sp < SHELL_SPEED:
                     ini.set_everywhere(w, 'Speed', SHELL_SPEED)
                 weapons_done.add(w.upper())
-            wh = (ini.get(w, 'Warhead') or '').upper()
-            if wh and (wh not in wh_class or rank[cls] > rank[wh_class[wh]]):
-                wh_class[wh] = cls
-    counts = {}
-    for wh, cls in wh_class.items():
-        vals = ini.all_values(wh, 'CellSpread')
-        if vals:
-            ini.set_everywhere(wh, 'CellSpread', '%g' % round(float(vals[-1]) * SPLASH_CLASS[cls], 2))
-        pm = ini.all_values(wh, 'PercentAtMax')
-        if pm:
-            ini.set_everywhere(wh, 'PercentAtMax', '%g' % round(float(pm[-1]) * EDGE_DAMAGE_FACTOR, 3))
-        counts[cls] = counts.get(cls, 0) + 1
-    log.append('tank shells: ballistic, scatter %s-%s cells, %d weapons at Speed %d; shell warheads %s' % (
-        SHELL_SCATTER + (len(weapons_done), SHELL_SPEED, counts)))
+    log.append('tank shells: ballistic, scatter %s-%s cells, %d weapons at Speed %d; warheads unchanged' % (
+        SHELL_SCATTER + (len(weapons_done), SHELL_SPEED)))
 
     open(dst, 'wb').write(ini.data())
     print('\n'.join(log))
