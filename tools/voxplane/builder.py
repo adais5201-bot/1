@@ -30,12 +30,14 @@ SKIN, GLASS, FRAME, GUN, ENGINE, REMAP, BLACK, METAL, BOMB, INTAKE, YELLOW, WHIT
 
 def scale_for_span(span):
     """Voxels per metre. Fighters use a true common scale (~8.2 vox/m, the
-    scale NAFAF is built at); large aircraft are compressed so a heavy bomber
-    stays within ~180 voxels of wingspan."""
+    scale NAFAF is built at). Larger aircraft are strongly compressed: in game
+    units stand one per cell and fly in tight groups, so twin-engine types stay
+    around 105-112 voxels of wingspan and four-engine bombers around 120;
+    bigger models overlap their neighbours and read as ghost images."""
     base = 8.2
     if span <= 12.0:
         return base
-    return base * 12.0 * (span / 12.0) ** 0.6 / span
+    return base * 12.0 * (span / 12.0) ** 0.2 / span
 
 
 def pchip(xs, ys):
