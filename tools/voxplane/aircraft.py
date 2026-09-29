@@ -1055,3 +1055,81 @@ def b5n2():
     lv.band(1.9, 2.25, 125, remap=True, ymax=0.5)
     lv.top('hino', 6.5, 4.8, 0.72).side('hino_w', 3.1, 0.2, 0.45, ymax=0.7)
     return p, lv
+
+
+# ======================================================================
+# Skins (unit code + a/b/c): same airframe as the base aircraft, repainted
+# after the colour theme of the skin the unit had before (black & gold,
+# gold, blue-and-yellow stripes...). Remap areas and markings are kept.
+# ======================================================================
+def skin_scheme(base, accent, pattern, seed=7, under=None):
+    def f(ctx):
+        n = ctx.n
+        a = P._c(accent, n)
+        b = P._c(base, n)
+        if pattern == 'tiger':          # irregular diagonal stripes
+            v = np.sin(ctx.x * 2.2 + np.abs(ctx.y) * 1.2 + 1.6 * ctx.noise(0.5, seed))
+            m = v > 0.45
+        elif pattern == 'speckle':      # star-like dots
+            m = ctx.noise(0.06, seed) > 1.2
+        elif pattern == 'bands':        # chordwise bands across the wings and fuselage
+            m = ((np.abs(ctx.y) + 0.35 * ctx.x) % 1.8) < 0.38
+        elif pattern == 'edges':        # coloured nose, wing tips and tail edges
+            L = ctx.plane.length
+            B = ctx.plane.span / 2
+            m = (ctx.x > L - 2.2) | (np.abs(ctx.y) > B - 2.2) | (ctx.x < 1.6)
+        else:
+            m = np.zeros(n, bool)
+        out = np.where(m[:, None], a, b)
+        if under is not None:
+            out = np.where((ctx.nz < -0.3)[:, None], P._c(under, n), out)
+        return out
+    return f
+
+
+BLACK_P = (34, 34, 38)
+GOLD = (205, 165, 70)
+DARK_GOLD = (120, 95, 45)
+NAVY = (40, 48, 110)
+AZURE = (130, 170, 220)
+PURPLE = (130, 110, 200)
+ORANGE = (225, 150, 40)
+RED_O = (215, 85, 35)
+SUN_RED = (195, 40, 30)
+KHAKI = (150, 130, 80)
+GREY_S = (125, 125, 130)
+BLUEGREY = (100, 110, 130)
+DARK_GREEN = (50, 80, 50)
+
+# skin code: (base code, description, colour scheme)
+SKINS = {
+    'falca':    ('falc', 'P-40E skin', skin_scheme(BLUEGREY, (70, 110, 60), 'tiger', 11)),
+    'beaga':    ('beag', 'P-51D skin', skin_scheme(BLACK_P, DARK_GREEN, 'tiger', 12)),
+    'f2002a':   ('f2002', 'F4U Thunderbird', skin_scheme(BLACK_P, GREY_S, 'tiger', 13)),
+    'f2002b':   ('f2002', 'F4U Voyager', skin_scheme(BLACK_P, KHAKI, 'tiger', 14)),
+    'f2002c':   ('f2002', 'F4U Golden', skin_scheme(GOLD, DARK_GOLD, 'tiger', 15)),
+    'ferda':    ('ferd', 'Typhoon BlackGold', skin_scheme(BLACK_P, GOLD, 'tiger', 16)),
+    'ferdb':    ('ferd', 'Typhoon BlueTit', skin_scheme(NAVY, (220, 190, 60), 'tiger', 17)),
+    'gerna':    ('gern', 'La-5FN Azure', skin_scheme(BLACK_P, AZURE, 'tiger', 18)),
+    'gernb':    ('gern', 'La-5FN DarkStar', skin_scheme(BLACK_P, PURPLE, 'speckle', 19)),
+    'gernc':    ('gern', 'La-5FN Guardian', skin_scheme(BLACK_P, ORANGE, 'bands', 20)),
+    'gernd':    ('gern', 'La-5FN Scarab', skin_scheme(BLACK_P, RED_O, 'tiger', 21)),
+    'gersa':    ('gers', 'Spitfire BlackGold', skin_scheme(BLACK_P, GOLD, 'tiger', 22)),
+    'gerza':    ('gerz', 'Bf 109 BlackGold', skin_scheme(BLACK_P, GOLD, 'tiger', 23)),
+    'gerzb':    ('gerz', 'Bf 109 Wanderer', skin_scheme(BLACK_P, AZURE, 'speckle', 24)),
+    'mig2000a': ('mig2000', 'Fw 190 Golden', skin_scheme(GOLD, DARK_GOLD, 'bands', 25)),
+    'alphaa':   ('alpha', 'He 111 Albatross', skin_scheme(NAVY, GOLD, 'edges', 26)),
+    'whoga':    ('whog', 'A-26 Sunbird', skin_scheme(BLACK_P, SUN_RED, 'tiger', 27)),
+}
+
+
+def _make_skin(base, scheme):
+    def f():
+        p, lv = REG[base][0]()
+        lv.scheme = scheme
+        return p, lv
+    return f
+
+
+for _code, (_base, _desc, _scheme) in SKINS.items():
+    REG[_code] = (_make_skin(_base, _scheme), _desc)
