@@ -207,6 +207,8 @@ WEAPON_NAME = {
     'MIG2000': 'PlasmaRifle', 'FIREFOX': 'MC205Guns', 'STFIGHTER': 'ChainGun', 'GERN': 'ClusterMissile',
     'JAPVP': 'MSSL3', 'JAGDS': 'BomMissile', 'F23': 'Maverick8', 'STBOMBER': 'Hellfire', 'NAFAF': 'Yak9Guns',
 }
+# RGI mortar infantry: deployed weapon (Secondary, DeployFireWeapon=1) +2 damage
+MORTAR_DEPLOYED_BONUS = {'Thapao': 2, 'ThapaoE': 2}
 MAX_ID = 24          # Ares refuses type IDs longer than 24 characters
 
 # Skins (base unit + A/B/C): same WWII weapon as the base with the skin's
@@ -284,8 +286,10 @@ PROJECTILES = '''
 ; ROT=1, Inviso=no: strafing runs against ground targets (same as the old
 ; GERL's AirDesem). No Inaccurate, so each round snaps to its target and
 ; counts as a hit; no Ranged, so a round is not cut off before it arrives.
-; A ROT=1 round does not chase a moving aircraft, so air targets use the
-; homing Secondary below (YR picks the Secondary against air targets).
+; AA=yes like every original fighter weapon: an aircraft only goes after
+; flying targets when its Primary can hit air. A ROT=1 round does not chase
+; a moving aircraft, but YR always takes the Secondary against air targets
+; when both weapons are AA, so dogfights use the homing Secondary below.
 [WW2_StrafeGunP]
 Image=DART
 Inviso=no
@@ -294,7 +298,7 @@ Arcing=no
 ROT=1
 Proximity=no
 Ranged=no
-AA=no
+AA=yes
 AG=yes
 SubjectToCliffs=no
 SubjectToElevation=no
@@ -630,6 +634,11 @@ def main(src, dst):
                                                               s2_key, rof + GATTLING_MG_WINDOW))
     log.append('cannon/MG timing fixed on %d stage sets:' % len(fixed))
     log.extend('  ' + f for f in fixed)
+
+    for w, add in MORTAR_DEPLOYED_BONUS.items():
+        dmg = int(ini.get(w, 'Damage')) + add
+        ini.set(w, 'Damage', dmg)
+        log.append('%s (RGI mortar, deployed): Damage %d' % (w, dmg))
 
     open(dst, 'wb').write(ini.data())
     print('\n'.join(log))
