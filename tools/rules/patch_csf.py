@@ -5,53 +5,29 @@
 import struct
 import sys
 
-# Aircraft names that did not fit the WWII aircraft the models now show.
-# Historical nicknames where one exists, otherwise the type designation.
+# Aircraft names that did not fit the WWII aircraft the models now show
+# (the mod's other names such as 雷霆, 黑鯊, 暗星 are kept).
 # label (case-insensitive) -> new text
 NAMES = {
-    'Name:ORCA':     '飛虎戰機',            # P-40E Warhawk (Flying Tigers)      was 入侵者戰機
-    'Name:AORCA':    '飛虎戰機',
+    'Name:ORCA':     '戰鷹戰機',            # P-40E Warhawk                      was 入侵者戰機
+    'Name:AORCA':    '戰鷹戰機',
     'Name:BEAGLE':   '野馬戰機',            # P-51D Mustang                      was 黑鷹戰機
     'Name:STBOMBER': '閃電戰機',            # P-38L Lightning                    was 光劍戰機
     'Name:F2002':    '海盜戰機',            # F4U-1D Corsair                     was 冰魄戰機
     'Name:B2BOMBER': '空中堡壘轟炸機',      # B-17G Flying Fortress              was 隱形轟炸機
-    'Name:F1172':    '解放者轟炸機',        # B-24D Liberator                    was 隱形戰機
-    'Name:KPLN':     '米切爾轟炸機',        # B-25J Mitchell                     was 紅魔戰機
-    'Name:a10w':     '入侵者攻擊機',        # A-26B Invader                      was 雷霆攻擊機
-    'Name:HORNET':   '無畏俯衝轟炸機',      # SBD-5 Dauntless                    was 黃蜂
-    'Name:J35':      '復仇者魚雷機',        # TBF/TBM Avenger                    was 蓝鲨
-    'Name:FERD':     '颱風戰機',            # Typhoon Mk.Ib                      was 陣風戰機
-    'Name:GERS':     '噴火戰機',            # Spitfire Mk.IX                     was 螢火蟲戰機
-    'Name:GERM':     '蘭開斯特轟炸機',      # Lancaster B.I                      was 暗星轟炸機
-    'Name:FIREFOX':  '灰狗戰機',            # MC.205V Veltro (greyhound)         was 火鳥戰機
-    'Name:BEAG2':    '燕式噴射戰機',        # Me 262A Schwalbe (swallow)         was 基因突變機
-    'Name:GERZ':     '古斯塔夫戰機',        # Bf 109G "Gustav"                   was 銀翼戰機
-    'Name:GERL':     '炮鳥攻擊機',          # Ju 87G Kanonenvogel (cannon bird)  was 渡鴉戰機
-    'Name:ALPHA':    '亨克爾轟炸機',        # He 111H                            was 黑曜戰機
-    'Name:JAFSD':    '容克斯轟炸機',        # Ju 88A-4                           was 黑鯊戰機
-    'Name:STFIGHTER': '雅克-3戰機',         # Yak-3                              was 蜂鳥戰機
-    'Name:NAFAF':    '雅克-9戰機',          # Yak-9                              was 龍騎士戰機
-    'Name:GERN':     '拉-5戰機',            # La-5FN                             was 星火戰機
-    'Name:GERR':     '佩-2俯衝轟炸機',      # Pe-2                               was 信號旗戰鬥轟炸機
+    'Name:F1172':    '鐵雨轟炸機',          # B-24D, carpet of cluster bombs     was 隱形戰機
+    'Name:BEAG2':    '風暴戰機',            # Me 262 (Sturmvogel, "storm bird")  was 基因突變機
     'Name:JAPVP':    '零式戰機',            # A6M2 Zero                          was 藍心戰機
     'Name:JAGDS':    '疾風戰機',            # Ki-84 Hayate                       was 暗影戰機
     'Name:F23':      '飛燕戰機',            # Ki-61 Hien                         was 幽灵战机
-    'Name:SU34':     '九七艦攻',            # B5N2 Type 97 carrier attack plane  was 鸭嘴兽
 }
 
 # Skin names keep their livery name; only the aircraft part changes.
 # label -> (old aircraft part, new aircraft part)
 SKIN_NAMES = {
-    'Name:FALCA': ('入侵者戰機', '飛虎戰機'), 'Name:BEAGA': ('黑鷹戰機', '野馬戰機'),
+    'Name:FALCA': ('入侵者戰機', '戰鷹戰機'), 'Name:BEAGA': ('黑鷹戰機', '野馬戰機'),
     'Name:F2002A': ('冰魄戰機', '海盜戰機'), 'Name:F2002B': ('冰魄戰機', '海盜戰機'),
     'Name:F2002C': ('冰魄戰機', '海盜戰機'),
-    'Name:FERDA': ('陣風戰機', '颱風戰機'), 'Name:FERDB': ('陣風戰機', '颱風戰機'),
-    'Name:GERNA': ('星火戰機', '拉-5戰機'), 'Name:GERNB': ('星火戰機', '拉-5戰機'),
-    'Name:GERNC': ('星火戰機', '拉-5戰機'), 'Name:GERND': ('星火戰機', '拉-5戰機'),
-    'Name:GERSA': ('螢火蟲戰機', '噴火戰機'),
-    'Name:GERZA': ('銀翼戰機', '古斯塔夫戰機'), 'Name:GERZB': ('銀翼戰機', '古斯塔夫戰機'),
-    'Name:ALPHAA': ('黑曜戰機', '亨克爾轟炸機'), 'Name:WHOGA': ('雷霆攻擊機', '入侵者攻擊機'),
-    'Name:NAFAFA': ('龍騎士戰機', '雅克-9戰機'), 'Name:NAFAFB': ('龍騎士戰機', '雅克-9戰機'),
     'Name:MIG2000A': ('急凍戰機', 'Fw 190戰機'),
 }
 
