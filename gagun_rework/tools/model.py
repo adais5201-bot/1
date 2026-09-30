@@ -24,12 +24,12 @@ RAMPS = {
     CONC: list(range(66, 80)),                  # warm khaki-grey concrete
     GLASS: [194, 195, 196, 197, 198, 199],
     BLACK: [58, 59, 60, 61, 62],
-    SNOW: [32, 33, 34, 35, 36, 37, 38, 40, 42],
+    SNOW: [37, 38, 39, 40, 41, 42, 44, 46, 48],
 }
 # (brightness at full light, gamma) per material
 TONE = {
     STEEL: (0.60, 1.25), BARREL: (0.68, 1.2), DARK: (0.50, 1.0), BRASS: (0.80, 1.1),
-    REMAP: (0.86, 1.05), CONC: (0.62, 1.1), GLASS: (0.9, 1.0), BLACK: (1.0, 1.0), SNOW: (1.05, 1.0),
+    REMAP: (0.86, 1.05), CONC: (0.62, 1.1), GLASS: (0.9, 1.0), BLACK: (1.0, 1.0), SNOW: (0.9, 1.0),
 }
 SPEC = {STEEL: 0.30, BARREL: 0.42, BRASS: 0.35, REMAP: 0.12, CONC: 0.0, DARK: 0.05, GLASS: 0.35, BLACK: 0.0, SNOW: 0.1}
 
@@ -83,6 +83,7 @@ def base_scene(damaged=False, snow=False):
     sc.add(lambda p: cyl(p, (0, 0, 0), 16.0, 10.4, 11.8), STEEL)
     sc.add(lambda p: cyl(p, (0, 0, 0), 15.0, 11.4, 12.0), BLACK)
     sc.add(lambda p: cyl(p, (0, 0, 0), 14.5, 11.4, RING_Z), BRASS)
+    sc.add(lambda p: cyl(p, (0, 0, 0), 12.8, 11.4, RING_Z + 0.15), STEEL)
     # front ammunition hatch
     sc.add(lambda p: box(local(p, FRONT_FACE), (19.2, 0, 5.4), (1.1, 3.4, 2.9), 0.3), BRASS)
     sc.cut(lambda p: box(local(p, FRONT_FACE), (20.4, 0, 5.2), (1.3, 2.3, 2.1), 0.0), BLACK)
@@ -105,12 +106,11 @@ def base_scene(damaged=False, snow=False):
         seam = (m == STEEL) & (z > 7.7) & (z < 8.3) & (r > 16.0)
         m = np.where(seam, DARK, m)
         if snow:
-            m = np.where((m == CONC) & (z > 2.4), SNOW, m)
-            m = np.where((m == STEEL) & (z > 11.7) & (r > 14.8), SNOW, m)
+            m = np.where((m == CONC) & (z > 2.5) & (r < 19.6) & (noise3(p * 0.6) > 0.42), SNOW, m)
         if damaged:
-            n = noise3(p * 0.55)
-            m = np.where((m != BLACK) & (n > 0.36), DARK, m)
-            m = np.where((m != BLACK) & (n > 0.63), BLACK, m)
+            n = noise3(p * 0.33)
+            m = np.where((m != BLACK) & (n > 0.60), DARK, m)
+            m = np.where((m != BLACK) & (n > 0.76), BLACK, m)
         return m
     sc.paint = paint
     return sc
