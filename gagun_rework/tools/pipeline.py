@@ -23,6 +23,17 @@ def shade_to_index(res):
         b, g = TONE.get(m, (0.8, 1))
         lum[sel] = b * ((0.13 + 0.80 * diff[sel] + 0.14 * fill[sel]) * (0.55 + 0.45 * ao[sel])) ** g + SPEC.get(m, 0) * spec[sel]
         lum[sel] *= tex[sel] * hgt[sel]
+    if getattr(res.get('scene'), 'snow', False):
+        # snow settles on every upward-facing surface; noisy threshold gives an irregular snow line
+        up = n[:, 2] + 0.22 * (noise3(P * 1.3) - 0.5)
+        sn = (up > 0.72) & (mat != BLACK) & (mat != GLASS)
+        if res.get('clip') is not None:          # construction cut planes (buildup) stay bare
+            sn &= np.abs(P[:, 2] - res['clip']) > 0.2
+        mat = mat.copy(); mat[sn] = SNOW
+        b, g = TONE[SNOW]
+        base_l = b * ((0.13 + 0.80 * diff[sn] + 0.14 * fill[sn]) * (0.55 + 0.45 * ao[sn])) ** g + SPEC[SNOW] * spec[sn]
+        sparkle = noise3(P[sn] * 3.1) > 0.8                 # glittering flecks like the vanilla snow art
+        lum[sn] = base_l * (0.92 + 0.08 * noise3(P[sn] * 2.0)) + 0.25 * sparkle
     L = np.zeros(hit.shape); L[hit] = lum
     M = np.zeros(hit.shape, int); M[hit] = mat
     # resolve sub-samples -> pixels: coverage >= 50%, dominant material, mean luminance of that material
@@ -82,9 +93,28 @@ def outline(img, matpx, dep):
     return out
 
 
+def icicles(img, matpx):
+    """short melt streaks / icicles hanging below snow edges onto vertical faces"""
+    out = img.copy(); Hh, Ww = img.shape
+    ramp = RAMPS[SNOW]
+    for y, x in zip(*np.nonzero(matpx == SNOW)):
+        if y + 1 >= Hh or matpx[y + 1, x] in (0, SNOW):
+            continue
+        h = (x * 7349 + y * 1931) % 11          # deterministic hash
+        if h < 3:
+            n = 1 + (h % 2)
+            for k in range(1, n + 1):
+                if y + k < Hh and img[y + k, x] > 0 and matpx[y + k, x] != SNOW:
+                    out[y + k, x] = ramp[min(5 + 2 * k, len(ramp) - 1)]
+    return out
+
+
 def render_frame(scene, clip=None):
     res = render(scene, W, H, CX, CY, ss=3, clip=clip)
+    res['scene'] = scene; res['clip'] = clip
     img, matpx, dep = shade_to_index(res)
+    if getattr(scene, 'snow', False):
+        img = icicles(img, matpx)
     img = outline(img, matpx, dep)
     return img
 

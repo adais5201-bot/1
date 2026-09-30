@@ -4,7 +4,7 @@
 
 Writes, per theater variant (GG = generic/temperate fallback, GA = snow):
     <pfx>gun_rework_v01.shp     6 frames : normal, damaged, damaged, + 3 shadows       (base)
-    <pfx>guntur_rework_v01.shp  64 frames (identical for GG/GA): 32 facings (0 = north/up, counter-clockwise) + 32 shadows
+    <pfx>guntur_rework_v01.shp  64 frames: 32 facings (0 = north/up, counter-clockwise) + 32 shadows
     <pfx>gunmk_rework_v01.shp   26 frames: 13 buildup frames (ends on base + turret facing 0) + 13 shadows
 All canvases are 155x171 with the foundation's ground centre at (77, 97), like the original art.
 """
@@ -24,11 +24,11 @@ BASE_CLIPS = [1.2, 2.8, 4.6, 6.4, 8.2, 10.0, 11.4]         # buildup frames 0-6:
 TUR_CLIPS = [14.8, 17.0, 19.4, 21.8, 24.4]                 # buildup frames 7-11: turret assembles
 
 
-def build_turret():
+def build_turret(snow=False):
     tur, tsh = [], []
     for k in range(32):
-        print('turret facing', k, flush=True)
-        ts = turret_scene(k)
+        print('turret facing', k, 'snow' if snow else '', flush=True)
+        ts = turret_scene(k, snow=snow)
         tur.append(render_frame(ts))
         tsh.append(shadow_frame(ts))
     return tur, tsh
@@ -50,7 +50,7 @@ def build(pfx, snow, tur, tsh):
     mk, mksh = [], []
     for c in BASE_CLIPS:
         mk.append(render_frame(b0, clip=c)); mksh.append(shadow_frame(b0, clip=c))
-    t0 = turret_scene(0)
+    t0 = turret_scene(0, snow=snow)
     for c in TUR_CLIPS:
         t = render_frame(t0, clip=c); s = shadow_frame(t0, clip=c)
         mk.append(np.where(t > 0, t, base)); mksh.append(np.maximum(s, bsh))
@@ -62,13 +62,15 @@ if __name__ == '__main__':
     args = sys.argv[2:]
     reuse = '--reuse-turret' in args
     variants = [a for a in args if not a.startswith('--')] or ['gg', 'ga']
-    if reuse:   # take the already-built turret frames instead of re-rendering all 32 facings
-        _, _, fr = read_shp(os.path.join(OUT, 'ggguntur_rework_v01.shp'))
-        tur = [f['img'] for f in fr[:32]]; tsh = [f['img'] for f in fr[32:]]
-    else:
-        tur, tsh = build_turret()          # the turret carries no terrain-specific detail: shared by all variants
     for v in variants:
-        build(v, (v == 'ga'), tur, tsh)
+        snow = (v == 'ga')
+        fn = os.path.join(OUT, f'{v}guntur_rework_v01.shp')
+        if reuse and os.path.exists(fn):   # take the already-built turret frames instead of re-rendering
+            _, _, fr = read_shp(fn)
+            tur = [f['img'] for f in fr[:32]]; tsh = [f['img'] for f in fr[32:]]
+        else:
+            tur, tsh = build_turret(snow)
+        build(v, snow, tur, tsh)
     # round-trip check
     for f in sorted(os.listdir(OUT)):
         w, h, fr = read_shp(os.path.join(OUT, f))

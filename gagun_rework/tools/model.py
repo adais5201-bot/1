@@ -24,14 +24,14 @@ RAMPS = {
     CONC: list(range(66, 80)),                  # warm khaki-grey concrete
     GLASS: [194, 195, 196, 197, 198, 199],
     BLACK: [58, 59, 60, 61, 62],
-    SNOW: [37, 38, 39, 40, 41, 42, 44, 46, 48],
+    SNOW: [32, 33, 34, 35, 36, 80, 81, 82, 83, 84, 85, 86, 87, 88],
 }
 # (brightness at full light, gamma) per material
 TONE = {
     STEEL: (0.60, 1.25), BARREL: (0.68, 1.2), DARK: (0.50, 1.0), BRASS: (0.80, 1.1),
-    REMAP: (0.86, 1.05), CONC: (0.62, 1.1), GLASS: (0.9, 1.0), BLACK: (1.0, 1.0), SNOW: (0.9, 1.0),
+    REMAP: (0.86, 1.05), CONC: (0.62, 1.1), GLASS: (0.9, 1.0), BLACK: (1.0, 1.0), SNOW: (1.12, 0.9),
 }
-SPEC = {STEEL: 0.30, BARREL: 0.42, BRASS: 0.35, REMAP: 0.12, CONC: 0.0, DARK: 0.05, GLASS: 0.35, BLACK: 0.0, SNOW: 0.1}
+SPEC = {STEEL: 0.30, BARREL: 0.42, BRASS: 0.35, REMAP: 0.12, CONC: 0.0, DARK: 0.05, GLASS: 0.35, BLACK: 0.0, SNOW: 0.15}
 
 
 def rot2(p, ang):
@@ -105,14 +105,13 @@ def base_scene(damaged=False, snow=False):
         m = np.where(panel, REMAP, m)
         seam = (m == STEEL) & (z > 7.7) & (z < 8.3) & (r > 16.0)
         m = np.where(seam, DARK, m)
-        if snow:
-            m = np.where((m == CONC) & (z > 2.5) & (r < 20.9) & (noise3(p * 0.6) > 0.38), SNOW, m)
         if damaged:
             n = noise3(p * 0.33)
             m = np.where((m != BLACK) & (n > 0.60), DARK, m)
             m = np.where((m != BLACK) & (n > 0.76), BLACK, m)
         return m
     sc.paint = paint
+    sc.snow = snow
     return sc
 
 
@@ -194,8 +193,7 @@ def turret_scene(k, snow=False):
         seam = (m == STEEL) & (z > 19.4) & (z < 19.95) & (np.abs(s) > 8.5)          # armour plate seam
         m = np.where(seam, DARK, m)
         m = np.where((m == STEEL) & (z > 13.9) & (z < 14.7) & (np.hypot(f, s) > 10.0), BRASS, m)
-        if snow:
-            m = np.where((m == STEEL) & (z > z1 + 0.6) & (z < z1 + 0.9) & (f < 3), SNOW, m)
         return m
     sc.paint = paint
+    sc.snow = snow
     return sc
