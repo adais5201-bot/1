@@ -106,7 +106,7 @@ def base_scene(damaged=False, snow=False):
         seam = (m == STEEL) & (z > 7.7) & (z < 8.3) & (r > 16.0)
         m = np.where(seam, DARK, m)
         if snow:
-            m = np.where((m == CONC) & (z > 2.5) & (r < 19.6) & (noise3(p * 0.6) > 0.42), SNOW, m)
+            m = np.where((m == CONC) & (z > 2.5) & (r < 20.9) & (noise3(p * 0.6) > 0.38), SNOW, m)
         if damaged:
             n = noise3(p * 0.33)
             m = np.where((m != BLACK) & (n > 0.60), DARK, m)

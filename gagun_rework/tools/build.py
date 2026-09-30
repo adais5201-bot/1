@@ -1,6 +1,6 @@
 """Build the reworked coast gun (GAGUN) SHP set.
 
-    python3 build.py [out_dir]
+    python3 build.py [out_dir] [gg|ga ...] [--reuse-turret]
 
 Writes, per theater variant (GG = generic/temperate fallback, GA = snow):
     <pfx>gun_rework_v01.shp     6 frames : normal, damaged, damaged, + 3 shadows       (base)
@@ -59,8 +59,14 @@ def build(pfx, snow, tur, tsh):
 
 
 if __name__ == '__main__':
-    variants = sys.argv[2:] or ['gg', 'ga']
-    tur, tsh = build_turret()          # the turret carries no terrain-specific detail: shared by all variants
+    args = sys.argv[2:]
+    reuse = '--reuse-turret' in args
+    variants = [a for a in args if not a.startswith('--')] or ['gg', 'ga']
+    if reuse:   # take the already-built turret frames instead of re-rendering all 32 facings
+        _, _, fr = read_shp(os.path.join(OUT, 'ggguntur_rework_v01.shp'))
+        tur = [f['img'] for f in fr[:32]]; tsh = [f['img'] for f in fr[32:]]
+    else:
+        tur, tsh = build_turret()          # the turret carries no terrain-specific detail: shared by all variants
     for v in variants:
         build(v, (v == 'ga'), tur, tsh)
     # round-trip check
